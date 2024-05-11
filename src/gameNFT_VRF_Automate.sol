@@ -365,6 +365,21 @@ contract ERC721AUpgradeableLumx is ERC721AUpgradeable, UUPSUpgradeable, Security
 
 
     /// -----------------------------------------------------------------------
+    /// Gaming public functions
+    /// -----------------------------------------------------------------------
+
+    function combat(uint256 id, uint256 amount) public payable returns(uint256 idGame){
+        //usdc or ether  
+        uint256 idGame;
+        return(idGame);
+    }
+
+
+    function bet(uint256 idGame, uint256 amount) public payable {
+        //usdc or ether  
+    }
+
+    /// -----------------------------------------------------------------------
     /// View public/external functions
     /// -----------------------------------------------------------------------
 

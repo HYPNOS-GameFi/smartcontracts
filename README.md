@@ -20,6 +20,11 @@ https://book.getfoundry.sh/
 - https://github.com/gelatodigital/vrf-nft/tree/main/src/vendor
 - https://docs.chain.link/vrf/v2/subscription/examples/get-a-random-number
 
+instalar a seguinte library do ccip:
+
+´´´javascript
+forge install smartcontractkit/ccip@b06a3c2eecb9892ec6f76a015624413fffa1a122 --no-commit
+´´´
 
 ### Build
 

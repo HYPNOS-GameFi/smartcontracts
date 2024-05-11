@@ -1,6 +1,45 @@
 [profile.default]
+solc_version = "0.8.23"
+
 src = "src"
 out = "out"
 libs = ["lib"]
+remappings = [
+    "@prb/test/=lib/prb-test/src/",
+    "forge-std/=lib/forge-std/src/",
+    "@solmate/contracts/=lib/solmate/src/",
+    "@chainlink/=lib/chainlink/",
+    "@openzeppelin/contracts-upgradeable/=lib/openzeppelin-contracts-upgradeable/contracts/",
+    "@ERC721A-Upgradeable/=lib/ERC721A-Upgradeable/",
+    "@openzeppelin/contracts/=lib/openzeppelin-contracts/contracts/",
+    "@thirdweb/=lib/contracts/",
+    "@ERC6551/=lib/erc6551/src/",
+    "@DN404/=lib/dn404/",
+]
 
-# See more config options https://github.com/foundry-rs/foundry/blob/master/crates/config/README.md#all-options
+optimizer = true
+optimezer_runs = 500000
+# match_path = "test/unit/*"
+# via_ir = true
+ffi = true
+evm_version = 'paris'
+
+
+[rpc_endpoints]
+sepolia = "${SEPOLIA_RPC_URL}"
+amoy = "${AMOY_RPC_URL}"
+polygon = "${POLYGON_RPC_URL}"
+ethereum = "${ETHEREUM_RPC_URL}"
+
+
+[etherscan]
+sepolia = { key = "${ETHERSCAN_API_KEY}" }
+amoy = { url = "https://api-testnet.polygonscan.com/api", key = "${POLYGONSCAN_API_KEY}" }
+polygon = { url = "https://api.polygonscan.com/api", key = "${POLYGONSCAN_API_KEY}" }
+
+[invariant]
+runs = 500
+depth = 200
+fail_on_revert = false
+
+# See more config options https://github.com/foundry-rs/foundry/tree/master/crates/config

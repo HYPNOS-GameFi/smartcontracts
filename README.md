@@ -15,6 +15,12 @@ https://book.getfoundry.sh/
 
 ## Usage
 
+**Olhar os seguintes repositorios**: 
+- https://github.com/ethercats/degeneratefarm/blob/main/contract.sol
+- https://github.com/gelatodigital/vrf-nft/tree/main/src/vendor
+- https://docs.chain.link/vrf/v2/subscription/examples/get-a-random-number
+
+
 ### Build
 
 ```shell

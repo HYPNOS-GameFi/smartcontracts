@@ -14,7 +14,7 @@ remappings = [
     "@ERC721A-Upgradeable/=lib/ERC721A-Upgradeable/",
     "@openzeppelin/contracts/=lib/openzeppelin-contracts/contracts/",
     "@thirdweb/=lib/contracts/",
-    "@ERC6551/=lib/erc6551/src/",
+    "@ERC6551/=lib/reference/src/",
     "@DN404/=lib/dn404/",
 ]
 

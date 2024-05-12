@@ -47,7 +47,7 @@ import { SecurityUpgradeable } from "./security/SecurityUpgradeable.sol";
  * @custom:revisors Eduardo W. da Cunha (@EWCunha) and Afonso Dalvi (@Afonsodalvi).
  * @custom:revision-id 1
  */
-contract ERC721AUpgradeableLumx is ERC721AUpgradeable, UUPSUpgradeable, SecurityUpgradeable, KeeperCompatibleInterface{
+contract gameNFT_VRF_Automate is ERC721AUpgradeable, UUPSUpgradeable, SecurityUpgradeable, KeeperCompatibleInterface{
    
 
     /// -----------------------------------------------------------------------

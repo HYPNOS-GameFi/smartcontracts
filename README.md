@@ -20,6 +20,9 @@ https://book.getfoundry.sh/
 - https://github.com/gelatodigital/vrf-nft/tree/main/src/vendor
 - https://docs.chain.link/vrf/v2/subscription/examples/get-a-random-number
 
+**Projetos que estoiu pegando de referencia para melhorar**
+- https://tititi.gitbook.io/tititi-nft-research-labs/incentive/erc6551-incentive-program
+
 instalar a seguinte library do ccip:
 
 ´´´javascript

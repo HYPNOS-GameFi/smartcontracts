@@ -368,11 +368,21 @@ contract gameNFT_VRF_Automate is ERC721AUpgradeable, UUPSUpgradeable, SecurityUp
     /// Gaming public functions
     /// -----------------------------------------------------------------------
 
-    function combat(uint256 id, uint256 amount) public payable returns(uint256 idGame){
+    function combat(uint256 id) public payable returns(uint256 idGame){
         //usdc or ether  
         uint256 idGame;
         return(idGame);
     }
+
+    function pointNFT()external{
+
+    }
+
+/// a cada 1 horas automate
+    function powerNFT()external{
+///vrf 
+    }
+
 
 
     function bet(uint256 idGame, uint256 amount) public payable {

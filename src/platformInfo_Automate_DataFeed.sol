@@ -18,7 +18,7 @@ import { UUPSUpgradeable } from "@openzeppelin/contracts/proxy/utils/UUPSUpgrade
 // ./interfaces/KeeperCompatibleInterface.sol
 import "@chainlink/contracts/src/v0.8/automation/KeeperCompatible.sol";
 
-import {IPriceSafraAgregadorV3} from "./interfaces/IPriceSafraAgregadorV3.sol";
+import {IPriceAgregadorV3} from "./interfaces/IPriceAgregadorV3.sol";
 
 //  ==========  Internal imports  ==========
 
@@ -30,7 +30,7 @@ contract platformInfo_Automate_DataFeed is  UUPSUpgradeable, SecurityUpgradeable
 
 
 //chainlink priceFeed
-IPriceSafraAgregadorV3 public priceFeed; //price real time Safra token
+IPriceAgregadorV3 public priceFeed; //price real time Safra token
 int256 public currentPrice;
 
 //automate
@@ -77,7 +77,7 @@ uint public lastTimeStamp;
 
         // the value of the Safra is updated from the interface contract, 
         //which is updated in real time with the values of the tokenized Safra
-        priceFeed = IPriceSafraAgregadorV3(_priceFeed);
+        priceFeed = IPriceAgregadorV3(_priceFeed);
         currentPrice = getLatestPrice();
     }
 
@@ -156,7 +156,7 @@ uint public lastTimeStamp;
     }
 
     function setPriceFeed(address newFeed) public onlyOwner{
-        priceFeed = IPriceSafraAgregadorV3(newFeed);
+        priceFeed = IPriceAgregadorV3(newFeed);
     }
 
 

@@ -1,15 +1,7 @@
 // SPDX-License-Identifier: MIT
+/*solhint-disable compiler-version */
 pragma solidity 0.8.23;
 
-// __/\\\_____________________________________________________________
-//  _\/\\\_____________________________________________________________
-//   _\/\\\_____________________________________________________________
-//    _\/\\\______________/\\\____/\\\____/\\\\\__/\\\\\____/\\\____/\\\_
-//     _\/\\\_____________\/\\\___\/\\\__/\\\///\\\\\///\\\_\///\\\/\\\/__
-//      _\/\\\_____________\/\\\___\/\\\_\/\\\_\//\\\__\/\\\___\///\\\/____
-//       _\/\\\_____________\/\\\___\/\\\_\/\\\__\/\\\__\/\\\____/\\\/\\\___
-//        _\/\\\\\\\\\\\\\\\_\//\\\\\\\\\__\/\\\__\/\\\__\/\\\__/\\\/\///\\\_
-//         _\///////////////___\/////////___\///___\///___\///__\///____\///_
 
 /// -----------------------------------------------------------------------
 /// Imports
@@ -17,8 +9,10 @@ pragma solidity 0.8.23;
 
 //  ==========  External imports  ==========
 
-import { ERC721AUpgradeable } from "@ERC721A-Upgradeable/contracts/ERC721AUpgradeable.sol";
+import { ERC1155Upgradeable, IERC1155, IERC1155MetadataURI} from "@openzeppelin/contracts-upgradeable/token/ERC1155/ERC1155Upgradeable.sol";
+import { ERC1155URIStorageUpgradeable } from "@openzeppelin/contracts-upgradeable/token/ERC1155/extensions/ERC1155URIStorageUpgradeable.sol";
 import { UUPSUpgradeable } from "@openzeppelin/contracts/proxy/utils/UUPSUpgradeable.sol";
+
 
 //  ==========  Chainlink imports  ==========
 
@@ -26,12 +20,11 @@ import { UUPSUpgradeable } from "@openzeppelin/contracts/proxy/utils/UUPSUpgrade
 // ./interfaces/KeeperCompatibleInterface.sol
 import "@chainlink/contracts/src/v0.8/automation/KeeperCompatible.sol";
 
-import {IPriceSafraAgregadorV3} from "./interfaces/IPriceSafraAgregadorV3.sol";
-
+import {IPriceAgregadorV3} from "./interfaces/IPriceAgregadorV3.sol";
 
 //  ==========  Internal imports  ==========
 
-import { SecurityUpgradeable } from "./security/SecurityUpgradeable.sol";
+import "./security/SecurityUpgradeable.sol";
 
 
 /// -----------------------------------------------------------------------
@@ -39,16 +32,15 @@ import { SecurityUpgradeable } from "./security/SecurityUpgradeable.sol";
 /// -----------------------------------------------------------------------
 
 /**
- * @title Lumx ERC-721 non-fungible smart contract.
- * @author Lumx by Bruno Leao.
- * @dev Uses {ERC721AUpgradeable} smart contract from @chiru-labs.
- * @dev Mints tokens in sequence, that is, it is not possible to define
- * the token ID to mint.
- * @custom:revisors Eduardo W. da Cunha (@EWCunha) and Afonso Dalvi (@Afonsodalvi).
+ * @title 
+ * @author Hypnos Team.
+ * @custom:revisors G-Deps and Afonso Dalvi (@Afonsodalvi).
  * @custom:revision-id 1
  */
-contract gameNFT_VRF_Automate is ERC721AUpgradeable, UUPSUpgradeable, SecurityUpgradeable, KeeperCompatibleInterface{
-   
+contract gameNFT_VRF_Automate is ERC1155URIStorageUpgradeable, SecurityUpgradeable, UUPSUpgradeable, KeeperCompatible {
+    /// -----------------------------------------------------------------------
+    /// Libraries
+    /// -----------------------------------------------------------------------
 
     /// -----------------------------------------------------------------------
     /// Custom errors
@@ -60,70 +52,26 @@ contract gameNFT_VRF_Automate is ERC721AUpgradeable, UUPSUpgradeable, SecurityUp
      */
     error MaxSupplyReached(uint256 supply);
 
-
-    /**
-     * @dev Error for when trasfering token to this contract is attempted.
-     */
-    error TransferNotAllowed();
-
     /// -----------------------------------------------------------------------
     /// State variables
     /// -----------------------------------------------------------------------
 
     /* solhint-disable var-name-mixedcase */
-    uint256 private s_maxPerAddress;
-    string private s_baseURI;
-    uint256 private s_maxSupply;
+    string private s_name;
+    string private s_symbol;
+    mapping(uint256 => uint256) s_maxSupplyForId;
+    mapping(uint256 => uint256) s_totalSupply;
 
-    uint256[50] private __gap;
-    /* solhint-enable var-name-mixedcase */
-
-    //chainlink
-    IPriceSafraAgregadorV3 public priceFeed; //price real time Safra token
+     //chainlink
+    IPriceAgregadorV3 public priceFeed; //price real time Safra token
     int256 public currentPrice;
 
-
-     // IPFS URIs for the dynamic nft https://nft.storage/
-    // NOTE: IPFs valuation Safra
-    string constant public SafraHype = "https://ipfs.io/ipfs/QmTXGUE8ciatzL1epqZTQRDDpzCXQSksQndQnaATfT9ATN";
-    string constant public SafraMedium = "https://ipfs.io/ipfs/QmWYLkVwHR29GzYXQzZfAnvjNFQtWs2QGJSxEHspgr71YL";
-
-    uint public /*immutable*/ interval;
+     uint public /*immutable*/ interval;
     uint public lastTimeStamp;
-    event TokenUpdated(string SafraURI);
+    event TokenUpdated(string URI);
+    
 
-    /// -----------------------------------------------------------------------
-    /// Events
-    /// -----------------------------------------------------------------------
-
-    /**
-     * @dev Emitted when a new backend address is set.
-     * @param caller: function _from address. Indexed.
-     * @param baseURI_: string value for new URI.
-     */
-    event ChangedBaseUri(address indexed caller, string baseURI_);
-
-    /**
-     * @dev Emitted when a new backend address is set.
-     * @param caller: function from address. Indexed.
-     * @param withdrawAddress: address value for new withdraw address.
-     */
-    event ChangedWithdrawAddress(address indexed caller, address withdrawAddress);
-
-    /// -----------------------------------------------------------------------
-    /// Modifiers (or internal functions as modifiers)
-    /// -----------------------------------------------------------------------
-
-    /**
-     * @dev Performs required checks before minting NFTs.
-     * @param to: address to which tokens will be minted.
-     * @param amount: amount of tokens to mint.
-     */
-    function _checkMint(address to, uint256 amount) internal view virtual {
-       
-        uint256 supply = totalSupply() + amount;
-        if (supply > s_maxSupply) revert MaxSupplyReached(supply);
-    }
+    uint256[50] private __gap;
 
     /// -----------------------------------------------------------------------
     /// Initializer/constructor
@@ -143,103 +91,136 @@ contract gameNFT_VRF_Automate is ERC721AUpgradeable, UUPSUpgradeable, SecurityUp
      * @notice Initializes this smart contract.
      * @dev This function is required so that the upgradeable proxy is functional.
      * @dev Callable only once.
-     * @dev Uses two initializer: `initializerERC721A` from {ERC721AUpgradeable} and
-     * `initializer` from OpenZeppelin's {Initializer}.
-     * @param owner_: owner of this smart contract.
-     * @param baseURI_: base URI for the collection.
-     * @param name_: ERC-721A token name.
-     * @param symbol_: ERC-721A token symbol.
-     * @param maxSupply_: max supply of tokens.
+     * @dev Uses two initializer: `initializer1155` from {ERC1155Upgradeable} and
+     * `initializer` from OpenZeppelin's {OwnableUpgradeable}.
+     * @param initialOwner: owner of this smart contract.
+     * @param _name: name of this smart contract.
+     * @param _symbol: symbol of this smart contract.
+     * @param uri_: Project URI.
      */
     function initialize(
-        address owner_,
-        string memory baseURI_,
-        string memory name_,
-        string memory symbol_,
-        uint256 maxSupply_,
+        address initialOwner,
+        string memory _name,
+        string memory _symbol,
+        string memory uri_,
         address _priceFeed,
         uint256 updateInterval
-    ) external initializerERC721A initializer {
-        __ERC721A_init(name_, symbol_);
-        __Security_init(owner_);
+    ) external initializer {
+        s_name = _name;
+        s_symbol = _symbol;
+        __ERC1155URIStorage_init();
+        _setBaseURI(uri_);
+        __Security_init(initialOwner);
 
-        s_baseURI = baseURI_;
-        s_maxSupply = maxSupply_;
-
-         ///@dev Chainlink information above
+        ///@dev Chainlink information above
         //sets the keepers update interval
         interval = updateInterval;
         lastTimeStamp = block.timestamp;
 
         // the value of the Safra is updated from the interface contract, 
         //which is updated in real time with the values of the tokenized Safra
-       priceFeed = IPriceSafraAgregadorV3(_priceFeed);
+        priceFeed = IPriceAgregadorV3(_priceFeed);
         currentPrice = getLatestPrice();
     }
 
     /// -----------------------------------------------------------------------
-    /// State-change public/external functions
+    /// State-change internal/private functions
     /// -----------------------------------------------------------------------
 
-    //  ==========  Mint functions  ==========
-
     /**
-     * @notice Mints given amount of tokens.
-     * @dev Calls {mint(address,uint256)} public function.
-     * @param amount: amount of tokens to mint.
+     * @notice Mints token.
+     * @param to: address to which the token will be minted.
+     * @param tokenId: token ID to mint.
+     * @param value: amount of tokens to mint.
      */
-    function mint(uint256 amount) external virtual {
-        mint(msg.sender, amount);
-    }
-
-    /**
-     * @notice Mints given amount of tokens to the given address
-     * @dev Checks if caller has permission to mint.
-     * @dev Checks if it is possible to mint given amount to the given address.
-     * @dev Won't work if contract is paused.
-     * @dev Added {nonReentrant} modifier from {ReentrancyGuardUpgradeable} smart contract.
-     * @param to: address to which tokens will be minted.
-     * @param amount: amount of tokens to mint.
-     */
-    function mint(address to, uint256 amount) public virtual nonReentrant {
-        _checkMint(to, amount);
-
-        _mint(to, amount);
-    }
-
-    /**
-     * @notice Mints given amount of tokens to the given address
-     * @dev Checks if caller is either contract owner or backend.
-     * @dev Won't work if contract is paused.
-     * @dev Added {nonReentrant} modifier from {ReentrancyGuardUpgradeable} smart contract.
-     * @param to: address to which tokens will be minted.
-     * @param amount: amount of tokens to mint.
-     */
-    function superMint(address to, uint256 amount) external virtual nonReentrant {
-        _checkMint(to, amount);
+    function mint(address to, uint256 tokenId, uint256 value, string memory _uri) external nonReentrant {
+        
+        if (s_maxSupplyForId[tokenId]>0){
+        if (s_totalSupply[tokenId] + value > s_maxSupplyForId[tokenId]) 
+            revert MaxSupplyReached(s_maxSupplyForId[tokenId]);
+        }
+        _setURI(tokenId,_uri);
         __whenNotPaused();
 
-        _mint(to, amount);
+        _mint(to, tokenId, value, "");
     }
 
-    //  ==========  Setter functions  ==========
+    /**
+     * @notice Mints token.
+     * @param to: address to which the token will be minted.
+     * @param tokenId: token ID to mint.
+     * @param value: amount of tokens to mint.
+     */
+    function superMint(address to, uint256 tokenId, uint256 value, string memory _uri) external nonReentrant {
+        
+        __whenNotPaused();
+        if (s_maxSupplyForId[tokenId]>0){
+        if (s_totalSupply[tokenId] + value > s_maxSupplyForId[tokenId]) 
+            revert MaxSupplyReached(s_maxSupplyForId[tokenId]);
+        }
+        
+        _setURI(tokenId,_uri);
+        s_totalSupply[tokenId] += value;
+        _mint(to, tokenId, value, "");
+    }
 
-    
 
     /**
-     * @notice Sets new base URI for the collection.
-     * @dev Checks if caller is either contract owner or backend.
-     * @dev Won't work if contract is paused.
-     * @dev Added {nonReentrant} modifier from {ReentrancyGuardUpgradeable} smart contract.
-     * @param baseURI_: new base URI for this collection.
+     * @notice Mints a batch of tokens.
+     * @param to: address to which the tokens will be minted.
+     * @param tokenIds: array of token IDs to mint.
+     * @param values: array of amounts of tokens to mint.
      */
-    function setBaseURI(string memory baseURI_) external virtual nonReentrant {
+    function mintBatch(
+        address to,
+        uint256[] calldata tokenIds,
+        uint256[] calldata values
+    ) external nonReentrant {
+     
+        __whenNotPaused();
+
+        maxSupplyReached(tokenIds, values);
+
+        for (uint256 i = 0; i < tokenIds.length; i++) {
+        s_totalSupply[tokenIds[i]] += values[i];
+         }
+        _mintBatch(to, tokenIds, values, "");
+    }
+
+    /**
+     * @notice Mints a batch of tokens.
+     * @param to: address to which the tokens will be minted.
+     * @param tokenIds: array of token IDs to mint.
+     * @param values: array of amounts of tokens to mint.
+     */
+    function superMintBatch(address to, uint256[] calldata tokenIds, uint256[] calldata values) external nonReentrant {
+        
+        __whenNotPaused();
+        
+        maxSupplyReached(tokenIds, values);
+
+        for (uint256 i = 0; i < tokenIds.length; i++) {
+        s_totalSupply[tokenIds[i]] += values[i];
+         }
+
+        _mintBatch(to, tokenIds, values, "");
+    }
+
+    /// -----------------------------------------------------------------------
+    /// Set functions by owner or backend
+    /// -----------------------------------------------------------------------
+
+    function setMaxSupplyForId(uint256[] calldata ids, uint256[] calldata maxSupplys) public {
+    require(ids.length == maxSupplys.length, "Os arrays de ids e maxSupplys devem ter o mesmo tamanho");
+
+    for (uint256 i = 0; i < ids.length; i++) {
+        s_maxSupplyForId[ids[i]] = maxSupplys[i];
+    }
+}
+
+    function setTokenUri(uint tokenId, string memory _uri)external {
         __onlyOwner();
-        __whenNotPaused();
-
-        s_baseURI = baseURI_;
-
-        emit ChangedBaseUri(msg.sender, baseURI_);
+        _setURI(tokenId,_uri);
     }
 
     /// -----------------------------------------------------------------------
@@ -247,44 +228,24 @@ contract gameNFT_VRF_Automate is ERC721AUpgradeable, UUPSUpgradeable, SecurityUp
     /// -----------------------------------------------------------------------
 
     /**
+     * @inheritdoc UUPSUpgradeable
      * @dev Authorizes smart contract upgrade (required by {UUPSUpgradeable}).
      * @dev Only contract owner or backend can call this function.
      * @dev Won't work if contract is paused.
-     * @inheritdoc UUPSUpgradeable
      */
-    function _authorizeUpgrade(address /*newImplementation*/) internal view override(UUPSUpgradeable) {
-       __onlyOwner();
+    function _authorizeUpgrade(address /*newImplementation*/) internal view virtual override(UUPSUpgradeable) {
+        __onlyOwner();
         __whenNotPaused();
     }
 
-    /**
-     * @dev Reads the s_baseURI storage variable.
-     * @dev Overriden from {ERC721AUpgradeable}.
-     * @return string value for the base URI of this collection.
-     * @inheritdoc ERC721AUpgradeable
-     */
-    function _baseURI() internal view virtual override(ERC721AUpgradeable) returns (string memory) {
-        return s_baseURI;
+    function maxSupplyReached(uint256[] calldata tokenIds, uint256[] calldata value)internal view{
+        for (uint256 i = 0; i < tokenIds.length; i++) {
+        if(s_maxSupplyForId[tokenIds[i]]>0){
+        if (s_totalSupply[tokenIds[i]] + value[i] > s_maxSupplyForId[tokenIds[i]]) 
+            revert MaxSupplyReached(s_maxSupplyForId[tokenIds[i]]);
+        }
+        }
     }
-
-    /**
-     *
-     * @notice Overrides {ERC721AUpgradeable-_beforeTokenTransfers} function to prevent transfering to this contract.
-     * @dev Added {__whenNotPaused} function to prevent transfering when the contract is paused.
-     * @param to: address to which token is transferred.
-     * @inheritdoc ERC721AUpgradeable
-     */
-    function _beforeTokenTransfers(
-        address,
-        address to,
-        uint256,
-        uint256
-    ) internal view virtual override(ERC721AUpgradeable) {
-        __whenNotPaused();
-        if (to == address(this)) revert TransferNotAllowed();
-    }
-
-
 
     /// -----------------------------------------------------------------------
     /// Chainlink functions
@@ -360,11 +321,11 @@ contract gameNFT_VRF_Automate is ERC721AUpgradeable, UUPSUpgradeable, SecurityUp
     }
 
     function setPriceFeed(address newFeed) public onlyOwner{
-        priceFeed = IPriceSafraAgregadorV3(newFeed);
+        priceFeed = IPriceAgregadorV3(newFeed);
     }
 
 
-    /// -----------------------------------------------------------------------
+     /// -----------------------------------------------------------------------
     /// Gaming public functions
     /// -----------------------------------------------------------------------
 
@@ -389,24 +350,42 @@ contract gameNFT_VRF_Automate is ERC721AUpgradeable, UUPSUpgradeable, SecurityUp
         //usdc or ether  
     }
 
-    /// -----------------------------------------------------------------------
-    /// View public/external functions
-    /// -----------------------------------------------------------------------
 
+    /// -----------------------------------------------------------------------
+    /// returns functions
+    /// -----------------------------------------------------------------------
 
     /**
-     * @notice Reads the s_baseURI storage variable.
-     * @return string for the base URI of the collection.
+     * @dev See {Metadata-name}.
      */
-    function getBaseURI() external view returns (string memory) {
-        return s_baseURI;
+    function name() public view returns (string memory) {
+        return s_name;
     }
 
     /**
-     * @notice Reads the s_maxSupply storage variable.
-     * @return uint256 value maximum token supply.
+     * @dev See {Metadata-symbol}.
      */
-    function getMaxSupply() external view returns (uint256) {
-        return s_maxSupply;
+    function symbol() public view returns (string memory) {
+        return s_symbol;
+    }
+
+    // function supportsInterface(bytes4 interfaceId) public view virtual override(ERC1155Upgradeable) returns (bool) {
+    //     interfaceId == type(IAccessControl).interfaceId ||
+    //     interfaceId == type(IERC1155).interfaceId ||
+    //     interfaceId == type(IERC1155MetadataURI).interfaceId ||
+    //     super.supportsInterface(interfaceId);
+    // }
+
+
+
+    /**
+     * @dev See {GetMaxSupply}.
+     */
+    function getMaxSupply(uint256[] calldata tokenIds) public view returns(uint256[] memory) {
+         uint256[] memory maxSupplies = new uint256[](tokenIds.length);
+    for (uint256 i = 0; i < tokenIds.length; i++) {
+        maxSupplies[i] = s_maxSupplyForId[tokenIds[i]];
+    }
+    return maxSupplies;
     }
 }

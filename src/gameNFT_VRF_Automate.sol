@@ -40,7 +40,9 @@ import { SecurityUpgradeable } from "./security/SecurityUpgradeable.sol";
  */
 contract gameNFT_VRF_Automate is ERC721AUpgradeable, UUPSUpgradeable, SecurityUpgradeable, KeeperCompatibleInterface{
    
-
+    
+    //events
+    event SkillUpdated(uint indexed idCombate, uint newAttack, uint newLife);
     /// -----------------------------------------------------------------------
     /// Custom errors
     /// -----------------------------------------------------------------------
@@ -50,6 +52,14 @@ contract gameNFT_VRF_Automate is ERC721AUpgradeable, UUPSUpgradeable, SecurityUp
      * @param supply: uint256 value for resultant supply.
      */
     error MaxSupplyReached(uint256 supply);
+
+    error ClassNotExist();
+
+    error NotOwnerId();
+
+    error NotSameClass();
+
+    error NotAcceptChallanger();
 
 
     /**
@@ -62,26 +72,53 @@ contract gameNFT_VRF_Automate is ERC721AUpgradeable, UUPSUpgradeable, SecurityUp
     /// -----------------------------------------------------------------------
 
     /* solhint-disable var-name-mixedcase */
-    uint256 private s_maxPerAddress;
     string private s_baseURI;
     uint256 private s_maxSupply;
 
     uint256[50] private __gap;
     /* solhint-enable var-name-mixedcase */
 
-    //chainlink
+    /// -----------------------------------------------------------------------
+    /// Chainlink variables
+    /// -----------------------------------------------------------------------
     IPriceAgregadorV3 public priceFeed; //price real time Safra token
     int256 public currentPrice;
-
-
-     // IPFS URIs for the dynamic nft https://nft.storage/
-    // NOTE: IPFs valuation Safra
-    string constant public SafraHype = "https://ipfs.io/ipfs/QmTXGUE8ciatzL1epqZTQRDDpzCXQSksQndQnaATfT9ATN";
-    string constant public SafraMedium = "https://ipfs.io/ipfs/QmWYLkVwHR29GzYXQzZfAnvjNFQtWs2QGJSxEHspgr71YL";
 
     uint public /*immutable*/ interval;
     uint public lastTimeStamp;
     event TokenUpdated(string URI);
+
+    /// -----------------------------------------------------------------------
+    /// Gaming variables
+    /// -----------------------------------------------------------------------
+   
+    
+     // IPFS URIs for the dynamic nft https://nft.storage/
+    // NOTE: IPFs 
+    string constant public ShipClassZero = "https://ipfs.io/ipfs/QmTXGUE8ciatzL1epqZTQRDDpzCXQSksQndQnaATfT9ATN";
+    string constant public ShipClassOne = "https://ipfs.io/ipfs/QmWYLkVwHR29GzYXQzZfAnvjNFQtWs2QGJSxEHspgr71YL";
+    string constant public ShipClassTwo = "https://ipfs.io/ipfs/QmWYLkVwHR29GzYXQzZfAnvjNFQtWs2QGJSxEHspgr71YL";
+    string constant public ShipClassThree = "https://ipfs.io/ipfs/QmWYLkVwHR29GzYXQzZfAnvjNFQtWs2QGJSxEHspgr71YL";
+
+
+    struct skills{
+        uint Attack; //updtae more or less atack power
+        uint Life; //update more or less life
+        uint lastTime;
+    }
+
+    struct ship{
+        address user;
+        uint class;
+        bool accept;
+    }
+
+    ///class, price and skills
+    mapping(uint idNFT => ship) shipOwner;
+    mapping(uint class => uint price) priceClass;
+    mapping(uint idCombate => skills) skillsUpdate; //update with chainlink
+    uint nextIDcombat;
+    
 
     /// -----------------------------------------------------------------------
     /// Events
@@ -149,7 +186,11 @@ contract gameNFT_VRF_Automate is ERC721AUpgradeable, UUPSUpgradeable, SecurityUp
         string memory symbol_,
         uint256 maxSupply_,
         address _priceFeed,
-        uint256 updateInterval
+        uint256 updateInterval,
+        uint256 priceShipZero,
+        uint256 priceShipOne,
+        uint256 priceShipTwo,
+        uint256 priceShipThree
     ) external initializerERC721A initializer {
         __ERC721A_init(name_, symbol_);
         __Security_init(owner_);
@@ -164,8 +205,14 @@ contract gameNFT_VRF_Automate is ERC721AUpgradeable, UUPSUpgradeable, SecurityUp
 
         // the value of the Safra is updated from the interface contract, 
         //which is updated in real time with the values of the tokenized Safra
-       priceFeed = IPriceAgregadorV3(_priceFeed);
+        priceFeed = IPriceAgregadorV3(_priceFeed);
         currentPrice = getLatestPrice();
+
+        //setprices initializer
+        priceClass[0]=priceShipZero;
+        priceClass[1]=priceShipOne;
+        priceClass[2]=priceShipTwo;
+        priceClass[3]=priceShipThree;
     }
 
     /// -----------------------------------------------------------------------
@@ -190,12 +237,41 @@ contract gameNFT_VRF_Automate is ERC721AUpgradeable, UUPSUpgradeable, SecurityUp
      * @dev Won't work if contract is paused.
      * @dev Added {nonReentrant} modifier from {ReentrancyGuardUpgradeable} smart contract.
      * @param to: address to which tokens will be minted.
-     * @param amount: amount of tokens to mint.
      */
-    function mint(address to, uint256 amount) public virtual nonReentrant {
-        _checkMint(to, amount);
+    function mint(address to, uint _class) public payable virtual nonReentrant {
+        _checkMint(to, 1);
+        
+        if(_class > 4) revert ClassNotExist();
 
-        _mint(to, amount);
+        if (_class == 0){
+        require(msg.value >= priceClass[0], "wrong prize for ship zero");
+         
+        shipOwner[_nextTokenId()].user = msg.sender;
+        shipOwner[_nextTokenId()].class = 0;
+
+        } if (_class == 1) {
+        require(msg.value >= priceClass[1], "wrong prize for ship one");
+        
+        shipOwner[_nextTokenId()].user = msg.sender;
+        shipOwner[_nextTokenId()].class = 1;
+        emit SkillUpdated( 0, 5, 4);
+
+
+        } if(_class == 2){
+        require(msg.value >= priceClass[2], "wrong prize for ship two");
+        
+        shipOwner[_nextTokenId()].user = msg.sender;
+        shipOwner[_nextTokenId()].class = 2;
+
+        } if(_class == 3){
+        require(msg.value >= priceClass[3], "wrong prize for ship three");
+        
+        shipOwner[_nextTokenId()].user = msg.sender;
+        shipOwner[_nextTokenId()].class = 3;
+        
+        } 
+
+        _mint(to, 1);
     }
 
     /**
@@ -292,12 +368,13 @@ contract gameNFT_VRF_Automate is ERC721AUpgradeable, UUPSUpgradeable, SecurityUp
         if ((block.timestamp - lastTimeStamp) > interval){
             lastTimeStamp = block.timestamp;
 
-            int latestPrice = getLatestPrice(); 
+            ///@dev TODO implementar o getLatesSkills
+            int latestSkills = getLatesSkills(); 
 
-            if(latestPrice == currentPrice){
+            if(latestSkills == currentPrice){ //change for currentSkills
                 return;
             } 
-            if(latestPrice < currentPrice){
+            if(latestSkills < currentPrice){
                 //bear
                 updateAllTokenUris("basic");
             } else {
@@ -305,11 +382,15 @@ contract gameNFT_VRF_Automate is ERC721AUpgradeable, UUPSUpgradeable, SecurityUp
                 updateAllTokenUris("luxo");
             }
 
-        currentPrice = latestPrice;
+        currentPrice = latestSkills;
         } else {
             // interval nor elapsed. intervalo não decorrido. No upkeep
 
         }
+    }
+
+    function getLatesSkills() public view returns(int256){
+
     }
 
     function getLatestPrice() public view returns(int256){
@@ -328,6 +409,22 @@ contract gameNFT_VRF_Automate is ERC721AUpgradeable, UUPSUpgradeable, SecurityUp
 
     ///@dev insert in here update the power of NFT
      function updateAllTokenUris(string memory trend) internal{
+        if(compareStrings("basic", trend)){
+               // _setBaseURI(SafraMedium);
+        }else {
+              //  _setBaseURI(SafraHype);
+        }
+
+        emit TokenUpdated(trend);
+    }
+
+    ///@dev insert in here update the power of NFT
+     function setPriceId(string memory trend) internal{
+        
+    }
+
+    ///@dev insert in here update the power of NFT
+     function updateAllSkillsVRF(string memory trend) internal{
         if(compareStrings("basic", trend)){
                // _setBaseURI(SafraMedium);
         }else {
@@ -359,20 +456,71 @@ contract gameNFT_VRF_Automate is ERC721AUpgradeable, UUPSUpgradeable, SecurityUp
     /// Gaming public functions
     /// -----------------------------------------------------------------------
 
-    function combat(uint256 id) public payable returns(uint256 idGame){
+    function combat(uint _idUser, uint _myId) public payable {
+        if(shipOwner[_idUser].class != shipOwner[_myId].class) revert NotSameClass();
+        if(shipOwner[_idUser].user != ownerOf(_idUser) 
+        && shipOwner[_myId].user != ownerOf(_myId))revert NotOwnerId();
+
+         uint GameId = nextIDcombat++;
+
+        if(shipOwner[_myId].class == 0){
+            skillsUpdate[GameId] = skills({
+            Attack: 3,
+            Life: 2,
+            lastTime: block.timestamp
+        });
+        emit SkillUpdated(GameId, 3, 2);
+
+        } if (shipOwner[_myId].class == 1){
+            skillsUpdate[GameId] = skills({
+            Attack: 5,
+            Life: 4,
+            lastTime: block.timestamp
+        });
+
+        emit SkillUpdated(GameId, 5, 4);
+
+        } if (shipOwner[_myId].class == 2){
+            skillsUpdate[GameId] = skills({
+            Attack: 7,
+            Life: 6,
+            lastTime: block.timestamp
+        });
+
+        emit SkillUpdated(GameId, 7, 6);
+
+        } if (shipOwner[_myId].class == 3){
+            skillsUpdate[GameId] = skills({
+            Attack: 9,
+            Life: 8,
+            lastTime: block.timestamp
+        });
+        emit SkillUpdated(GameId, 9, 8);
+
+        }
+
+        shipOwner[_myId].accept = true;
+        
         //usdc or ether  
-        uint256 idGame;
-        return(idGame);
+        
     }
 
-    function pointNFT()external{
+
+    function acceptChallanger(uint idGame, uint _idUser, uint _myId) public payable {
+        if(!shipOwner[_idUser].accept) revert NotAcceptChallanger();
+        if(shipOwner[_idUser].user != ownerOf(_idUser) 
+        && shipOwner[_myId].user != ownerOf(_myId))revert NotOwnerId();
+
+        if(skillsUpdate[idGame].lastTime + 48 hours > block.timestamp){
+            shipOwner[_idUser].accept = false;
+        }
+
+        shipOwner[_myId].accept = true;
+        //start game 
+        skillsUpdate[idGame].lastTime = block.timestamp;
 
     }
 
-/// a cada 1 horas automate
-    function powerNFT()external{
-///vrf 
-    }
 
 
 

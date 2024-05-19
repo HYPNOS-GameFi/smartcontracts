@@ -502,13 +502,14 @@ KeeperCompatibleInterface, VRFConsumerBaseV2 {
         uint256 _requestId
     ) external view returns (bool fulfilled, uint256[] memory randomWords) {
 
+    }
 
 
     /// -----------------------------------------------------------------------
     /// Gaming public functions
     /// -----------------------------------------------------------------------
 
-    function combat(uint _idUser, uint _myId) public payable {
+    function challenger(uint _idUser, uint _myId) public payable {
         if(shipOwner[_idUser].class != shipOwner[_myId].class) revert NotSameClass();
         if(shipOwner[_idUser].user != ownerOf(_idUser) 
         && shipOwner[_myId].user != ownerOf(_myId))revert NotOwnerId();

@@ -19,6 +19,9 @@ import "@chainlink/contracts/src/v0.8/automation/KeeperCompatible.sol";
 
 import {IPriceAgregadorV3} from "./interfaces/IPriceAgregadorV3.sol";
 
+import "@chainlink/contracts/src/v0.8/vrf/interfaces/VRFCoordinatorV2Interface.sol";
+import "@chainlink/contracts/src/v0.8/vrf/VRFConsumerBaseV2.sol";
+
 
 //  ==========  Internal imports  ==========
 
@@ -29,16 +32,10 @@ import { SecurityUpgradeable } from "./security/SecurityUpgradeable.sol";
 /// Contract
 /// -----------------------------------------------------------------------
 
-/**
- * @title Lumx ERC-721 non-fungible smart contract.
- * @author Lumx by Bruno Leao.
- * @dev Uses {ERC721AUpgradeable} smart contract from @chiru-labs.
- * @dev Mints tokens in sequence, that is, it is not possible to define
- * the token ID to mint.
- * @custom:revisors Eduardo W. da Cunha (@EWCunha) and Afonso Dalvi (@Afonsodalvi).
- * @custom:revision-id 1
- */
-contract gameNFT_VRF_Automate is ERC721AUpgradeable, UUPSUpgradeable, SecurityUpgradeable, KeeperCompatibleInterface{
+
+contract gameNFT_VRF_Automate is ERC721AUpgradeable, 
+UUPSUpgradeable, SecurityUpgradeable, 
+KeeperCompatibleInterface, VRFConsumerBaseV2 {
    
     
     //events
@@ -87,6 +84,34 @@ contract gameNFT_VRF_Automate is ERC721AUpgradeable, UUPSUpgradeable, SecurityUp
     uint public /*immutable*/ interval;
     uint public lastTimeStamp;
     event TokenUpdated(string URI);
+
+    // VRF
+    event RequestSent(uint256 requestId, uint32 numWords);
+    event RequestFulfilled(uint256 requestId, uint256[] randomWords);
+
+    struct RequestStatus {
+        bool fulfilled; // whether the request has been successfully fulfilled
+        bool exists; // whether a requestId exists
+        uint256[] randomWords;
+    }
+    mapping(uint256 => RequestStatus) public s_requests; /* requestId --> requestStatus */          
+
+    // Sepolia coordinator
+    // https://docs.chain.link/docs/vrf/v2/subscription/supported-networks/
+    VRFCoordinatorV2Interface COORDINATOR;
+    address vrfCoordinator = 0x8103B0A8A00be2DDC778e6e7eaa21791Cd364625;
+    bytes32 keyHash = 0x474e34a077df58807dbe9c96d3c009b23b3c6d0cce433e59bbf5b34f823bc56c;
+    uint32 callbackGasLimit = 2500000;
+    uint16 requestConfirmations = 3;
+    uint32 numWords =  1;
+
+    // past requests Ids.
+    uint256[] public requestIds;
+    uint256 public lastRequestId;
+    uint256[] public lastRandomWords;
+
+    // Your subscription ID.
+    uint64 public s_subscriptionId;
 
     /// -----------------------------------------------------------------------
     /// Gaming variables
@@ -163,7 +188,7 @@ contract gameNFT_VRF_Automate is ERC721AUpgradeable, UUPSUpgradeable, SecurityUp
      * contract.
      */
     /// @custom:oz-upgrades-unsafe-allow constructor
-    constructor() {
+    constructor() VRFConsumerBaseV2(vrfCoordinator){
         _disableInitializers();
     }
 
@@ -184,9 +209,10 @@ contract gameNFT_VRF_Automate is ERC721AUpgradeable, UUPSUpgradeable, SecurityUp
         string memory baseURI_,
         string memory name_,
         string memory symbol_,
-        uint256 maxSupply_,
-        address _priceFeed,
-        uint256 updateInterval,
+        uint256 maxSupply_, 
+        address _priceFeed,//DataFeed chainlink
+        uint256 updateInterval, //interval Automate Chainlink
+        uint64 subscriptionId, // VRF Chainlink go to https://vrf.chain.link/ and create a subscription: 
         uint256 priceShipZero,
         uint256 priceShipOne,
         uint256 priceShipTwo,
@@ -207,6 +233,10 @@ contract gameNFT_VRF_Automate is ERC721AUpgradeable, UUPSUpgradeable, SecurityUp
         //which is updated in real time with the values of the tokenized Safra
         priceFeed = IPriceAgregadorV3(_priceFeed);
         currentPrice = getLatestPrice();
+
+        //VRF
+        COORDINATOR = VRFCoordinatorV2Interface(vrfCoordinator);
+        s_subscriptionId = subscriptionId;
 
         //setprices initializer
         priceClass[0]=priceShipZero;
@@ -354,7 +384,7 @@ contract gameNFT_VRF_Automate is ERC721AUpgradeable, UUPSUpgradeable, SecurityUp
 
 
     /// -----------------------------------------------------------------------
-    /// Chainlink functions
+    /// Chainlink Automate
     /// -----------------------------------------------------------------------
 
      /**
@@ -423,6 +453,7 @@ contract gameNFT_VRF_Automate is ERC721AUpgradeable, UUPSUpgradeable, SecurityUp
         
     }
 
+     ///@TODO: implement exemple https://github.com/juanc004/Chainlink-VRF-Runners-Game/blob/main/Runners.sol
     ///@dev insert in here update the power of NFT
      function updateAllSkillsVRF(string memory trend) internal{
         if(compareStrings("basic", trend)){
@@ -450,6 +481,27 @@ contract gameNFT_VRF_Automate is ERC721AUpgradeable, UUPSUpgradeable, SecurityUp
     function setPriceFeed(address newFeed) public onlyOwner{
         priceFeed = IPriceAgregadorV3(newFeed);
     }
+
+    /// -----------------------------------------------------------------------
+    /// Chainlink VRF
+    /// -----------------------------------------------------------------------
+
+    ///@TODO: implement exemple https://github.com/juanc004/Chainlink-VRF-Runners-Game/blob/main/Runners.sol
+    function fulfillRandomWords(
+        uint256 _requestId, /* requestId */
+        uint256[] memory _randomWords
+    ) internal override {
+    }
+
+     /// -----------------------------------------------------------------------
+    /// Helpers chainlink functions
+    /// -----------------------------------------------------------------------
+
+
+     function getRequestStatus(
+        uint256 _requestId
+    ) external view returns (bool fulfilled, uint256[] memory randomWords) {
+
 
 
     /// -----------------------------------------------------------------------

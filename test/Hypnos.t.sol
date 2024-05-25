@@ -140,11 +140,10 @@ contract HypnosTest is Test {
 
     function test_claimBet() public {
         bytes32 _id = test_bet();
-
         vm.startPrank(fullUser,fullUser);
         assertEq(payment.balanceOf(fullUser), 9 ether);
         game.claimBet(_id);
-        assertEq(payment.balanceOf(fullUser), 11 ether);
+        assertEq(payment.balanceOf(fullUser), 10.6 ether);
         vm.stopPrank();
 
     }

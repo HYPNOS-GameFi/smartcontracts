@@ -40,6 +40,7 @@ error ChallengeIsNotActive(bytes32 id);
 error ChallengeIsActive(bytes32 id);
 error NotInChallenge(bytes32 id, uint256 _tokenId);
 error NotAllowed(address _address);
+error CannotBetOnThisType();
 
 /// -----------------------------------------------------------------------
 ///                                 Struct
@@ -235,18 +236,23 @@ function playChallenge(uint256 _tokenId, bytes32 _id, uint256 _points) public re
     if(challenges[_id]._challengeTimestamp < block.timestamp){
         challenges[_id]._finalized = true;
         emit challengeFinalized(_id);
+
         if(challenges[_id]._type == challengeType._pointsCash){
             uint256 _aux = ((challenges[_id]._totalAmount1 + challenges[_id]._totalAmount2) * s_takerFee)/10000;
             _distributeBet(_aux);
-            challenges[_id]._totalAmount1 = (challenges[_id]._totalAmount1 * s_takerFee)/10000;
-            challenges[_id]._totalAmount2 = (challenges[_id]._totalAmount2 * s_takerFee)/10000;
-        }else if  (challenges[_id]._firstChallengerPoints > challenges[_id]._secondChallengerPoints){
+            challenges[_id]._totalAmount1 = (challenges[_id]._totalAmount1 * (10000 - s_takerFee))/10000;
+            challenges[_id]._totalAmount2 = (challenges[_id]._totalAmount2 * (10000 - s_takerFee))/10000;
+        }
+
+        if  (challenges[_id]._firstChallengerPoints > challenges[_id]._secondChallengerPoints){
             points[challenges[_id]._firstChallenger] += challenges[_id]._firstChallengerPoints + challenges[_id]._secondChallengerPoints;
             emit updatedPoints(challenges[_id]._firstChallenger, points[challenges[_id]._firstChallenger]);
         }else{
             points[challenges[_id]._secondChallenger] += challenges[_id]._firstChallengerPoints + challenges[_id]._secondChallengerPoints;
             emit updatedPoints(challenges[_id]._secondChallenger, points[challenges[_id]._secondChallenger]);
         }
+
+        
 
         return false;
     }
@@ -274,7 +280,8 @@ function playPoints(uint256 _tokenId, uint256 _points) public {
 //bet on challenge
 
 function betOnChallenge(bytes32 _id, uint256 _amount, uint256 _tokenId) public {
-    //@note don't let people bet on type points
+    if(challenges[_id]._type != challengeType._pointsCash)
+    revert CannotBetOnThisType();
 
     if(challenges[_id]._finalized)
     revert ChallengeIsNotActive(_id);
@@ -312,13 +319,13 @@ function claimBet(bytes32 _id) public {
 
     if  (challenges[_id]._firstChallengerPoints > challenges[_id]._secondChallengerPoints){
         require(challenges[_id].userDeposits[msg.sender]._amount1 > 100, "Hypnos: not enough betted");
-        _aux = (challenges[_id].userDeposits[msg.sender]._amount1 * (challenges[_id]._totalAmount1 + challenges[_id]._totalAmount2))/ challenges[_id]._totalAmount1;
+        _aux = ((((challenges[_id].userDeposits[msg.sender]._amount1* (10000 - s_takerFee))/10000) * (challenges[_id]._totalAmount1 + challenges[_id]._totalAmount2))/ challenges[_id]._totalAmount1);
         // ( user bet side amount / side amount total ) * totalPooled(side 1 total + side 2 total)
     } else {
         require(challenges[_id].userDeposits[msg.sender]._amount2 > 100, "Hypnos: not enough betted");
-        _aux = (challenges[_id].userDeposits[msg.sender]._amount2 * (challenges[_id]._totalAmount1 + challenges[_id]._totalAmount2))/ challenges[_id]._totalAmount2;
+        _aux = ((((challenges[_id].userDeposits[msg.sender]._amount2* (10000 - s_takerFee))/10000) * (challenges[_id]._totalAmount1 + challenges[_id]._totalAmount2))/ challenges[_id]._totalAmount2);
     }
-
+    
     challenges[_id].userClaimed[msg.sender] = true;
     require(betPayment.transfer(msg.sender,_aux),"Hypnos: Claim Bet transfer failed");
 }

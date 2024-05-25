@@ -118,7 +118,9 @@ link: https://docs.alpaca.markets/reference/stockauctions-1
         string memory redeemSource,
         address functionsRouter,
         bytes32 donId,
-        address tslaPriceFeed,
+        address tslaPriceFeed,///nao tem na rede da sepolia e usou o Link como simulacao.
+        //porem, vamos usar o 0x5c13b249846540F81c093Bc342b5d963a7518145 que o ETF IBTA
+        ///https://docs.chain.link/data-feeds/price-feeds/addresses?network=ethereum&page=1&search=IBTA#sepolia-testnet
         address usdcPriceFeed,
         address redemptionCoin,
         uint64 secretVersion,

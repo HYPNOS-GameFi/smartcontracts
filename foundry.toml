@@ -8,16 +8,16 @@ remappings = [
     "@prb/test/=lib/prb-test/src/",
     "forge-std/=lib/forge-std/src/",
     "@solmate/contracts/=lib/solmate/src/",
-    "@chainlink/=lib/chainlink/",
     "@ccip/=lib/ccip/contracts/src/v0.8/",
     "@openzeppelin/contracts-upgradeable/=lib/openzeppelin-contracts-upgradeable/contracts/",
+    "@chainlink/contracts/src/=lib/chainlink-brownie-contracts/contracts/src/",
     "@ERC721A-Upgradeable/=lib/ERC721A-Upgradeable/",
     "@openzeppelin/contracts/=lib/openzeppelin-contracts/contracts/",
     "@thirdweb/=lib/contracts/",
     "@ERC6551/=lib/reference/src/",
     "@DN404/=lib/dn404/",
 ]
-
+###"@chainlink/=lib/chainlink/",
 optimizer = true
 optimezer_runs = 500000
 # match_path = "test/unit/*"

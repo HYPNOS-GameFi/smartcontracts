@@ -25,9 +25,13 @@ https://book.getfoundry.sh/
 
 instalar a seguinte library do ccip:
 
-´´´javascript
+```javascript
 forge install smartcontractkit/ccip@b06a3c2eecb9892ec6f76a015624413fffa1a122 --no-commit
-´´´
+```
+
+```javascript
+forge install https://github.com/smartcontractkit/chainlink-brownie-contracts --no-commit
+```
 
 ### Build
 

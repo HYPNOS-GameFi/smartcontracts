@@ -453,7 +453,7 @@ KeeperCompatibleInterface, VRFConsumerBaseV2 {
         
     }
 
-     ///@TODO: implement exemple https://github.com/juanc004/Chainlink-VRF-Runners-Game/blob/main/Runners.sol
+    
     ///@dev insert in here update the power of NFT
      function updateAllSkillsVRF(string memory trend) internal{
         if(compareStrings("basic", trend)){
@@ -483,13 +483,13 @@ KeeperCompatibleInterface, VRFConsumerBaseV2 {
     }
 
     /// -----------------------------------------------------------------------
-    /// Chainlink VRF
+    /// Chainlink VRF 
     /// -----------------------------------------------------------------------
 
-    ///@TODO: implement exemple https://github.com/juanc004/Chainlink-VRF-Runners-Game/blob/main/Runners.sol
-    function fulfillRandomWords(
+        function fulfillRandomWords(
         uint256 _requestId, /* requestId */
         uint256[] memory _randomWords
+        ///@note: implement exemple https://github.com/juanc004/Chainlink-VRF-Runners-Game/blob/main/Runners.sol
     ) internal override {
     }
 

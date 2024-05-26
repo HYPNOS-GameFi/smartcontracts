@@ -18,21 +18,15 @@ import { SecurityUpgradeable } from "../security/SecurityUpgradeable.sol";
 import { OracleLib, AggregatorV3Interface } from "./lib/OracleLib.sol";
 
 
-/*
-In the future, we can use other APIs in the call, such as the telecom one, 
-providing another layer of security in cases of theft and improper SIM access: https://opengateway.telefonica.com/pt/apis/sim-swap
 
-But in this example below we will use the alpacas API to generate our real-world stock derivative
-link: https://docs.alpaca.markets/reference/stockauctions-1
-*/
 
 /**
- * @title dTSLA
- * @notice This is our contract to make requests to the Alpaca API to mint TSLA-backed dTSLA tokens
- * @dev This contract is meant to be for educational purposes only
+ * @title dIBTA ETF
+ * @notice This is our contract to make requests to the Alpaca API to mint IBTA-backed dIBTA tokens
+ * @dev This contract is meant to be for hackthon chainlink only
  */
 
- contract dTSLAOracleLumx is FunctionsClient, ERC20Upgradeable, SecurityUpgradeable, UUPSUpgradeable{
+ contract dIBTAETF is FunctionsClient, ERC20Upgradeable, SecurityUpgradeable, UUPSUpgradeable{
     /// -----------------------------------------------------------------------
     /// Libraries
     /// -----------------------------------------------------------------------
@@ -40,12 +34,12 @@ link: https://docs.alpaca.markets/reference/stockauctions-1
 
     ///necessary for chainlink
     using FunctionsRequest for FunctionsRequest.Request;
-    using OracleLib for AggregatorV3Interface; ///@dev: modificar no futuro as regras envolvendo o Aggregator na sua propria Lib
+    using OracleLib for AggregatorV3Interface;
     using Strings for uint256;
 
-    error dTSLA__NotEnoughCollateral();
-    error dTSLA__BelowMinimumRedemption();
-    error dTSLA__RedemptionFailed();
+    error dIBTA__NotEnoughCollateral();
+    error dIBTA__BelowMinimumRedemption();
+    error dIBTA__RedemptionFailed();
 
     // Custom error type
     error UnexpectedRequestID(bytes32 requestId);
@@ -55,7 +49,7 @@ link: https://docs.alpaca.markets/reference/stockauctions-1
         redeem
     }
 
-    struct dTslaRequest {
+    struct dibtaRequest {
         uint256 amountOfToken;
         address requester;
         MintOrRedeem mintOrRedeem;
@@ -79,11 +73,11 @@ link: https://docs.alpaca.markets/reference/stockauctions-1
     uint8 s_secretSlot;
 
     //requestID tem q ser em bytes pq vamos armazenae na chamada das requests vinculado as informacoes da acao da Tesla Off-Chain atrelando de forma On-chain
-    mapping(bytes32 requestId => dTslaRequest request) private s_requestIdToRequest;
+    mapping(bytes32 requestId => dibtaRequest request) private s_requestIdToRequest;
     mapping(address user => uint256 amountAvailableForWithdrawal) private s_userToWithdrawalAmount;
 
-    //// endereco do contrato da TSLA/USD no data Feed
-    address public i_tslaUsdFeed;
+    //// endereco do contrato da ibta/USD no data Feed
+    address public i_ibtaUsdFeed;
     address public i_usdcUsdFeed;
     address public i_redemptionCoin;
 
@@ -118,7 +112,7 @@ link: https://docs.alpaca.markets/reference/stockauctions-1
         string memory redeemSource,
         address functionsRouter,
         bytes32 donId,
-        address tslaPriceFeed,///nao tem na rede da sepolia e usou o Link como simulacao.
+        address ibtaPriceFeed,///nao tem na rede da sepolia e usou o Link como simulacao.
         //porem, vamos usar o 0x5c13b249846540F81c093Bc342b5d963a7518145 que o ETF IBTA
         ///https://docs.chain.link/data-feeds/price-feeds/addresses?network=ethereum&page=1&search=IBTA#sepolia-testnet
         address usdcPriceFeed,
@@ -138,7 +132,7 @@ link: https://docs.alpaca.markets/reference/stockauctions-1
         //Descentralized Oracle Network - cada rede tem a sua
         s_donID = donId;
         ///chainlink PriceFeed
-        i_tslaUsdFeed = tslaPriceFeed;
+        i_ibtaUsdFeed = ibtaPriceFeed;
         i_usdcUsdFeed = usdcPriceFeed;
         ///o subId e a subscricao da chainlink feita no site deles q precisa ser abastecida com tokens LINK
         i_subId = subId;
@@ -192,62 +186,62 @@ link: https://docs.alpaca.markets/reference/stockauctions-1
         // they want to mint $100 and the portfolio has $200 - then that's cool
         //nessa parte usamos o DataFeed para pegar os valores em dollar
         if (_getCollateralRatioAdjustedTotalBalance(amountOfTokensToMint) > s_portfolioBalance) {
-            revert dTSLA__NotEnoughCollateral();
+            revert dIBTA__NotEnoughCollateral();
         }
-         //Assim ao tentar mandar uma requisicao de mint ele faz o request da API e verifica quanto de TSLA ele tem na conta
+         //Assim ao tentar mandar uma requisicao de mint ele faz o request da API e verifica quanto de ibta ele tem na conta
          //fazendo essa 
         FunctionsRequest.Request memory req; ///@dev se formos na library FunctionsRequest.sol conseguimos todos os parametros de request (struct) e linguagem disponivel  
         req.initializeRequestForInlineJavaScript(s_mintSource); // Initialize the request with JS code
         ///Podemos usar keys secretas da API com o servico de criptografia seguro da Chainlink
         req.addDONHostedSecrets(s_secretSlot, s_secretVersion);
-
+        //https://docs.chain.link/chainlink-functions/tutorials/api-use-secrets DOCUMENTACAO
         // Send the request and store the request ID
         /// CBOR e uma forma de de utilizar dados binarios em que e usado pela chainlink para entender a requisicao
         //Caso queira entender: https://cbor.io/
         //Assim ele armazena esse valor no contrato e podendo executar o _mintFulFillRequest inserindo o requestID retornado por essa funcao
         requestId = _sendRequest(req.encodeCBOR(), i_subId, GAS_LIMIT, s_donID);
-        s_requestIdToRequest[requestId] = dTslaRequest(amountOfTokensToMint, msg.sender, MintOrRedeem.mint);
-        return requestId; //nele tem todas as informacoes off-chain do valor da acao de TSLA em USD
+        s_requestIdToRequest[requestId] = dibtaRequest(amountOfTokensToMint, msg.sender, MintOrRedeem.mint);
+        return requestId; //nele tem todas as informacoes off-chain do valor da acao de ibta em USD
     }
 
     /*
-     * @notice user sends a Chainlink Functions request to sell TSLA for redemptionCoin
+     * @notice user sends a Chainlink Functions request to sell ibta for redemptionCoin
      * @notice this will put the redemptionCoin in a withdrawl queue that the user must call to redeem
      * 
-     * @dev Burn dTSLA
-     * @dev Sell TSLA on brokerage
+     * @dev Burn dibta
+     * @dev Sell ibta on brokerage
      * @dev Buy USDC on brokerage
      * @dev Send USDC to this contract for user to withdraw
      * 
-     * @param amountdTsla - the amount of dTSLA to redeem
+     * @param amountdibta - the amount of dibta to redeem
      */
-    function sendRedeemRequest(uint256 amountdTsla) external whenNotPaused returns (bytes32 requestId) {
+    function sendRedeemRequest(uint256 amountdibta) external whenNotPaused returns (bytes32 requestId) {
         // Should be able to just always redeem?
         // @audit potential exploit here, where if a user can redeem more than the collateral amount
         // Checks
         // Remember, this has 18 decimals
-        uint256 amountTslaInUsdc = getUsdcValueOfUsd(getUsdValueOfTsla(amountdTsla));
-        if (amountTslaInUsdc < MINIMUM_REDEMPTION_COIN_REDEMPTION_AMOUNT) {
-            revert dTSLA__BelowMinimumRedemption();
+        uint256 amountibtaInUsdc = getUsdcValueOfUsd(getUsdValueOfibta(amountdibta));
+        if (amountibtaInUsdc < MINIMUM_REDEMPTION_COIN_REDEMPTION_AMOUNT) {
+            revert dIBTA__BelowMinimumRedemption();
         }
 
         // Internal Effects
         FunctionsRequest.Request memory req;
         req.initializeRequestForInlineJavaScript(s_redeemSource); // Initialize the request with JS code
         string[] memory args = new string[](2);
-        args[0] = amountdTsla.toString();
+        args[0] = amountdibta.toString();
         // The transaction will fail if it's outside of 2% slippage
         // This could be a future improvement to make the slippage a parameter by someone
-        args[1] = amountTslaInUsdc.toString();
+        args[1] = amountibtaInUsdc.toString();
         req.setArgs(args);
 
         // Send the request and store the request ID
         // We are assuming requestId is unique
         requestId = _sendRequest(req.encodeCBOR(), i_subId, GAS_LIMIT, s_donID);
-        s_requestIdToRequest[requestId] = dTslaRequest(amountdTsla, msg.sender, MintOrRedeem.redeem);
+        s_requestIdToRequest[requestId] = dibtaRequest(amountdibta, msg.sender, MintOrRedeem.redeem);
 
         // External Interactions
-        _burn(msg.sender, amountdTsla);
+        _burn(msg.sender, amountdibta);
     }
 
     /**
@@ -278,7 +272,7 @@ link: https://docs.alpaca.markets/reference/stockauctions-1
         // Send the user their USDC
         bool succ = ERC20Upgradeable(i_redemptionCoin).transfer(msg.sender, amountToWithdraw);
         if (!succ) {
-            revert dTSLA__RedemptionFailed();
+            revert dIBTA__RedemptionFailed();
         }
     }
 
@@ -291,7 +285,7 @@ link: https://docs.alpaca.markets/reference/stockauctions-1
         s_portfolioBalance = uint256(bytes32(response)); ///@dev o response e referente a API e verificando se tem o saldo na plataforma referente as acoes q quer tokenizar
 
         if (_getCollateralRatioAdjustedTotalBalance(amountOfTokensToMint) > s_portfolioBalance) {
-            revert dTSLA__NotEnoughCollateral();
+            revert dIBTA__NotEnoughCollateral();
         }
 
         if (amountOfTokensToMint != 0) {
@@ -316,11 +310,11 @@ link: https://docs.alpaca.markets/reference/stockauctions-1
             usdcAmountWad = usdcAmount * (10 ** (18 - i_redemptionCoinDecimals));
         }
         if (usdcAmount == 0) {
-            // revert dTSLA__RedemptionFailed();
-            // Redemption failed, we need to give them a refund of dTSLA
+            // revert dibta__RedemptionFailed();
+            // Redemption failed, we need to give them a refund of dibta
             // This is a potential exploit, look at this line carefully!!
-            uint256 amountOfdTSLABurned = s_requestIdToRequest[requestId].amountOfToken;
-            _mint(s_requestIdToRequest[requestId].requester, amountOfdTSLABurned);
+            uint256 amountOfdibtaBurned = s_requestIdToRequest[requestId].amountOfToken;
+            _mint(s_requestIdToRequest[requestId].requester, amountOfdibtaBurned);
             return;
         }
 
@@ -352,9 +346,9 @@ link: https://docs.alpaca.markets/reference/stockauctions-1
         return s_portfolioBalance;
     }
 
-    // TSLA USD has 8 decimal places, so we add an additional 10 decimal places
-    function getTslaPrice() public view returns (uint256) {
-        AggregatorV3Interface priceFeed = AggregatorV3Interface(i_tslaUsdFeed);
+    // ibta USD has 8 decimal places, so we add an additional 10 decimal places
+    function getibtaPrice() public view returns (uint256) {
+        AggregatorV3Interface priceFeed = AggregatorV3Interface(i_ibtaUsdFeed);
         (, int256 price,,,) = priceFeed.staleCheckLatestRoundData();
         return uint256(price) * ADDITIONAL_FEED_PRECISION;
     }
@@ -365,8 +359,8 @@ link: https://docs.alpaca.markets/reference/stockauctions-1
         return uint256(price) * ADDITIONAL_FEED_PRECISION;
     }
 
-    function getUsdValueOfTsla(uint256 tslaAmount) public view returns (uint256) {
-        return (tslaAmount * getTslaPrice()) / PRECISION;
+    function getUsdValueOfibta(uint256 ibtaAmount) public view returns (uint256) {
+        return (ibtaAmount * getibtaPrice()) / PRECISION;
     }
 
     /* 
@@ -381,16 +375,16 @@ link: https://docs.alpaca.markets/reference/stockauctions-1
     }
 
     function getTotalUsdValue() public view returns (uint256) {
-        return (totalSupply() * getTslaPrice()) / PRECISION;
+        return (totalSupply() * getibtaPrice()) / PRECISION;
     }
 
-    function getCalculatedNewTotalValue(uint256 addedNumberOfTsla) public view returns (uint256) {
-        // Calculate: 10 dtsla tokens + 5 dtsla tokens = 15 dtsla tokens * tsla price(100) = 1500
+    function getCalculatedNewTotalValue(uint256 addedNumberOfibta) public view returns (uint256) {
+        // Calculate: 10 dibta tokens + 5 dibta tokens = 15 dibta tokens * ibta price(100) = 1500
         //precision is number of decimal token
-        return ((totalSupply() + addedNumberOfTsla) * getTslaPrice()) / PRECISION;
+        return ((totalSupply() + addedNumberOfibta) * getibtaPrice()) / PRECISION;
     }
 
-    function getRequest(bytes32 requestId) public view returns (dTslaRequest memory) {
+    function getRequest(bytes32 requestId) public view returns (dibtaRequest memory) {
         return s_requestIdToRequest[requestId];
     }
 

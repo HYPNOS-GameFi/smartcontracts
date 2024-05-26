@@ -4,6 +4,7 @@ pragma solidity ^0.8.19;
 import {Script, console} from "forge-std/Script.sol";
 import {Helper} from "./Helpers.s.sol";
 import {HYPNOS_gameFi} from "../src/mainGame.sol";
+import {pool} from "../src/pool.sol";
 import {ERC20Mock} from "@openzeppelin/contracts/mocks/token/ERC20Mock.sol";
 import {SubscriptionAPI} from "@chainlink/contracts/src/v0.8/vrf/dev/SubscriptionAPI.sol";
 
@@ -14,6 +15,7 @@ contract DeployGame is Script {
     Helper public config;
     ERC1967Proxy public proxy;
     HYPNOS_gameFi public game;
+    pool public poolContract;
     ERC20Mock public mock;
     bool public deployMock = true;
     bool addComsumer = true;
@@ -33,6 +35,10 @@ contract DeployGame is Script {
     uint256 public subscriptionId =
         86066367899265651094365220000614482092166546892613257493279963569089616398365;
 
+    
+    address _priceFeed = 0x9DdfaCa8183c41ad55329BdeeD9F6A8d53168B1B;//change address
+    uint256 updateInterval = 15; //change value
+
     function run() public {
         config = new Helper();
 
@@ -45,6 +51,16 @@ contract DeployGame is Script {
             mock = new ERC20Mock();
         }
 
+        bytes memory initPool = abi.encodeWithSelector(
+            pool.initialize.selector,
+            owner,
+            address(_priceFeed),
+            updateInterval
+        );
+
+        poolContract = pool(payable(new ERC1967Proxy(address(poolContract), initPool)));
+
+
         game = new HYPNOS_gameFi(vrfCoordinator, keyHash, subscriptionId);
 
         bytes memory init = abi.encodeWithSelector(
@@ -55,6 +71,8 @@ contract DeployGame is Script {
             symbol_,
             maxSupply_,
             address(mock),
+            address(mock), //change HypnosPoint
+            address(poolContract),
             takerFee,
             priceClass,
             types
@@ -72,5 +90,6 @@ contract DeployGame is Script {
         vm.stopBroadcast();
 
         console.log("address:", address(game));
+        console.log("address:", address(poolContract));
     }
 }

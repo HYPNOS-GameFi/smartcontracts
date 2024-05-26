@@ -21,7 +21,7 @@ import { SecurityUpgradeable } from "./security/SecurityUpgradeable.sol";
 /// -----------------------------------------------------------------------
 
 
-contract airdropFarm is ERC20Upgradeable, SecurityUpgradeable, UUPSUpgradeable {
+contract hypnosPoint is ERC20Upgradeable, SecurityUpgradeable, UUPSUpgradeable {
     /// -----------------------------------------------------------------------
     /// Libraries
     /// -----------------------------------------------------------------------
@@ -114,14 +114,12 @@ contract airdropFarm is ERC20Upgradeable, SecurityUpgradeable, UUPSUpgradeable {
      * @dev Callable only once.
      * @dev Uses `initializer` from OpenZeppelin's {OwnableUpgradeable}.
      * @param initialOwner: owner of this smart contract.
-     * @param backend: backend address.
      * @param name_: ERC-20 token name.
      * @param symbol_: ERC-20 token symbol.
      * @param maxSupply: maximum token supply.
      */
     function initialize(
         address initialOwner,
-        address backend,
         string memory name_,
         string memory symbol_,
         uint256 maxSupply

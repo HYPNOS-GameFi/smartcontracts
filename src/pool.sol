@@ -11,6 +11,8 @@ Implement ERC6551 for create a tokenBOund NFT gaming for user, the benefit is in
 */
 
 import { UUPSUpgradeable } from "@openzeppelin/contracts/proxy/utils/UUPSUpgradeable.sol";
+import {IERC20} from "@ccip/vendor/openzeppelin-solidity/v4.8.3/contracts/token/ERC20/IERC20.sol";
+
 
 //  ==========  Chainlink imports  ==========
 
@@ -23,11 +25,13 @@ import {IPriceAgregadorV3} from "./interfaces/IPriceAgregadorV3.sol";
 //  ==========  Internal imports  ==========
 
 import { SecurityUpgradeable } from "./security/SecurityUpgradeable.sol";
+import {Withdraw} from "./chainlink/Withdraw.sol";
 
 
 
-contract platformInfo_Automate_DataFeed is  UUPSUpgradeable, SecurityUpgradeable, KeeperCompatibleInterface{
+contract pool is  UUPSUpgradeable, SecurityUpgradeable, KeeperCompatibleInterface{
 
+error FailedToWithdrawEth(address owner, address target, uint256 value);
 
 //chainlink priceFeed
 IPriceAgregadorV3 public priceFeed; //price real time Safra token
@@ -38,7 +42,7 @@ uint public /*immutable*/ interval;
 uint public lastTimeStamp;
 
 
- /// -----------------------------------------------------------------------
+    /// -----------------------------------------------------------------------
     /// Initializer/constructor
     /// -----------------------------------------------------------------------
 
@@ -142,6 +146,20 @@ uint public lastTimeStamp;
         // emit TokenUpdated(trend);
     }
 
+    function withdraw(address beneficiary) public onlyOwner {
+        uint256 amount = address(this).balance;
+        (bool sent, ) = beneficiary.call{value: amount}("");
+        if (!sent) revert FailedToWithdrawEth(msg.sender, beneficiary, amount);
+    }
+
+    function withdrawToken(
+        address beneficiary,
+        address token
+    ) public onlyOwner {
+        uint256 amount = IERC20(token).balanceOf(address(this));
+        IERC20(token).transfer(beneficiary, amount);
+    }
+
     /// -----------------------------------------------------------------------
     /// Helpers chainlink functions
     /// -----------------------------------------------------------------------
@@ -174,5 +192,8 @@ uint public lastTimeStamp;
        __onlyOwner();
         __whenNotPaused();
     }
+
+    receive() external payable {}
+
 
 }

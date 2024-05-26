@@ -19,7 +19,7 @@ contract Helper is Script{
         0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80;
 
     constructor() {
-        if (block.chainid == 11155111 || block.chainid == 8002) { //only sepolia and Amoy
+        if (block.chainid == 11155111 || block.chainid == 80002) { //only sepolia and Amoy
             activeNetworkConfig = getTestnetConfig();
         } else if (block.chainid == 1 || block.chainid == 137) {
             activeNetworkConfig = getMainnetConfig();
@@ -31,7 +31,7 @@ contract Helper is Script{
         networks[SupportedNetworks.OPTIMISM_GOERLI] = "Optimism Goerli";
         networks[SupportedNetworks.AVALANCHE_FUJI] = "Avalanche Fuji";
         networks[SupportedNetworks.ARBITRUM_GOERLI] = "Arbitrum Goerli";
-        networks[SupportedNetworks.POLYGON_MUMBAI] = "Polygon Mumbai";
+        networks[SupportedNetworks.POLYGON_AMOY] = "Polygon Amoy";
     }
 
     function getMainnetConfig() public view returns (NewtorkConfig memory) {
@@ -85,7 +85,7 @@ contract Helper is Script{
         LINK
     }
 
-    // Chain IDs --DESTINATION CHAIN SELECTOR
+    // Chain IDs --DESTINATION or Source CHAIN SELECTOR
     uint64 constant chainIdEthereumSepolia = 16015286601757825753;
     uint64 constant chainIdOptimismGoerli = 2664363617261496610;
     uint64 constant chainIdAvalancheFuji = 14767482510784806043;
@@ -156,23 +156,6 @@ contract Helper is Script{
         0xc1c76a8c5bFDE1Be034bbcD930c668726E7C1987;
 
     
-
-    function getDummyTokensFromNetwork(
-        SupportedNetworks network
-    ) internal pure returns (address ccipBnM, address ccipLnM) {
-        if (network == SupportedNetworks.ETHEREUM_SEPOLIA) {
-            return (ccipBnMEthereumSepolia, ccipLnMEthereumSepolia);
-        } else if (network == SupportedNetworks.OPTIMISM_GOERLI) {
-            return (ccipBnMOptimismGoerli, clCcipLnMOptimismGoerli);
-        } else if (network == SupportedNetworks.ARBITRUM_GOERLI) {
-            return (ccipBnMArbitrumTestnet, clCcipLnMArbitrumTestnet);
-        } else if (network == SupportedNetworks.AVALANCHE_FUJI) {
-            return (ccipBnMAvalancheFuji, clCcipLnMAvalancheFuji);
-        } else if (network == SupportedNetworks.POLYGON_AMOY) {
-            return (ccipBnMPolygonAmoy, clCcipLnMPolygonAmoy);
-        }
-    }
-
     function getConfigFromNetwork(
         SupportedNetworks network
     )

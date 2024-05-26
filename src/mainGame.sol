@@ -8,10 +8,14 @@ pragma solidity ^0.8.23;
 import {ERC721AUpgradeable} from "lib/ERC721A-Upgradeable/contracts/ERC721AUpgradeable.sol";
 import {UUPSUpgradeable} from "lib/openzeppelin-contracts/contracts/proxy/utils/UUPSUpgradeable.sol";
 import {IERC20} from "lib/openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
+import { ERC20Upgradeable, IERC20 } from "@openzeppelin/contracts-upgradeable/token/ERC20/ERC20Upgradeable.sol";
 import {SecurityUpgradeable} from "./security/SecurityUpgradeable.sol";
 import {VRFConsumerBaseV2} from "@chainlink/contracts/src/v0.8/vrf/VRFConsumerBaseV2.sol";
 import {VRFV2PlusClient} from "@chainlink/contracts/src/v0.8/vrf/dev/libraries/VRFV2PlusClient.sol";
 import {IVRFCoordinatorV2Plus} from "@chainlink/contracts/src/v0.8/vrf/dev/interfaces/IVRFCoordinatorV2Plus.sol";
+import {LinkTokenInterface} from "./interfaces/LinkTokenInterface.sol";
+import {IRouterClient} from "@ccip/ccip/interfaces/IRouterClient.sol";
+import {Client} from "@ccip/ccip/libraries/Client.sol";
 
 contract HYPNOS_gameFi is
     ERC721AUpgradeable,
@@ -52,6 +56,10 @@ contract HYPNOS_gameFi is
         uint256 _tokenId,
         bytes32 indexed _id
     );
+    event MessageSent(
+        bytes32 messageId
+    );
+
 
     /// -----------------------------------------------------------------------
     ///                                 Error
@@ -141,7 +149,9 @@ contract HYPNOS_gameFi is
     uint256[4] public s_classPrice;
     uint256 public s_takerFee;
 
-    IERC20 public betPayment;
+    address public betPayment;
+    address public hypnosPoint;
+    address public pool;
 
     mapping(shipClass => basicPower) public powerClass;
     mapping(address user => mapping(uint256 tokenId => ShipInfo info))
@@ -158,6 +168,13 @@ contract HYPNOS_gameFi is
     uint16 public immutable i_requestConfirmations = 3;
     uint32 public immutable i_numWords = 1;
     mapping(uint256 requestId => RequestStatus request) public s_requests;
+
+    address constant routerPolygonAmoy =
+        0x9C32fCB86BF0f4a1A8921a9Fe46de3198bb884B2;
+    uint64 constant chainIdPolygonAmoy = 
+        12532609583862916517;
+    address constant linkPolygonAmoy =
+        0x0Fd9e8d3aF1aaee056EB9e802c3A762a667b1904;
 
     /// -----------------------------------------------------------------------
     ///                                 Constructor
@@ -185,6 +202,8 @@ contract HYPNOS_gameFi is
         string memory symbol_,
         uint256 maxSupply_,
         address paymentToken,
+        address hypnosPoint_,
+        address pool_,
         uint256 takerFee,
         uint256[4] memory priceClass,
         string[4] memory typesUri
@@ -196,7 +215,9 @@ contract HYPNOS_gameFi is
         s_maxSupply = maxSupply_;
         s_takerFee = takerFee;
 
-        betPayment = IERC20(paymentToken);
+        betPayment = paymentToken;
+        hypnosPoint = hypnosPoint_;
+        pool = pool_;
 
         s_classPrice = priceClass;
         TYPES = typesUri;
@@ -299,11 +320,12 @@ contract HYPNOS_gameFi is
         if (challenges[_id]._challengeTimestamp < block.timestamp) {
             challenges[_id]._finalized = true;
             emit challengeFinalized(_id);
+        
+        uint256 _aux = ((challenges[_id]._totalAmount1 +
+                    challenges[_id]._totalAmount2) * s_takerFee) / 10000;
 
             if (challenges[_id]._type == challengeType._pointsCash) {
-                uint256 _aux = ((challenges[_id]._totalAmount1 +
-                    challenges[_id]._totalAmount2) * s_takerFee) / 10000;
-                _distributeBet(_aux);
+                _distributeBet(_aux, pool);
                 challenges[_id]._totalAmount1 =
                     (challenges[_id]._totalAmount1 * (10000 - s_takerFee)) /
                     10000;
@@ -379,7 +401,7 @@ contract HYPNOS_gameFi is
 
         require(_amount > 100, "Hypnos: Amount has to be greater than 100");
 
-        bool success = betPayment.transferFrom(
+        bool success = ERC20Upgradeable(betPayment).transferFrom(
             msg.sender,
             address(this),
             _amount
@@ -436,7 +458,7 @@ contract HYPNOS_gameFi is
 
         challenges[_id].userClaimed[msg.sender] = true;
         require(
-            betPayment.transfer(msg.sender, _aux),
+            ERC20Upgradeable(betPayment).transfer(msg.sender, _aux),
             "Hypnos: Claim Bet transfer failed"
         );
     }
@@ -499,8 +521,49 @@ contract HYPNOS_gameFi is
 
     //distribute bet
 
-    function _distributeBet(uint256 _tratedAmount) internal {
-        //@note insert CCIP for pool with automate
+    function _distributeBet(uint256 _tratedAmount, address to) internal {
+        Client.EVM2AnyMessage memory message = Client.EVM2AnyMessage({
+            receiver: abi.encode(hypnosPoint),
+            data: abi.encodeWithSignature("mint(address,uint256)", to, _tratedAmount),
+            tokenAmounts: new Client.EVMTokenAmount[](0),
+            extraArgs: "",
+            feeToken: address(linkPolygonAmoy)
+        });
+
+        uint256 fee = IRouterClient(routerPolygonAmoy).getFee(
+            chainIdPolygonAmoy,
+            message
+        );
+
+        bytes32 messageId;
+        LinkTokenInterface(linkPolygonAmoy).approve(routerPolygonAmoy, fee);
+            messageId = IRouterClient(routerPolygonAmoy).ccipSend(
+                chainIdPolygonAmoy,
+                message
+            );
+        emit MessageSent(messageId);
+       
+        Client.EVM2AnyMessage memory messageBet = Client.EVM2AnyMessage({
+            receiver: abi.encode(betPayment),
+            data: abi.encodeWithSignature("mint(address,uint256)", to, _tratedAmount),
+            tokenAmounts: new Client.EVMTokenAmount[](0),
+            extraArgs: "",
+            feeToken: address(linkPolygonAmoy)
+        });
+        uint256 feeBet = IRouterClient(routerPolygonAmoy).getFee(
+            chainIdPolygonAmoy,
+            messageBet
+        );
+
+        bytes32 messageIdBet;
+        LinkTokenInterface(linkPolygonAmoy).approve(routerPolygonAmoy, feeBet);
+            messageIdBet = IRouterClient(routerPolygonAmoy).ccipSend(
+                chainIdPolygonAmoy,
+                messageBet
+            );
+        emit MessageSent(messageId);
+        emit MessageSent(messageIdBet);
+
     }
 
     function _vrfRandomizeClass(uint256 tokenId) internal {

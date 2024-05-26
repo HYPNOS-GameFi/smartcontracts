@@ -74,7 +74,7 @@ contract Helper is Script{
         OPTIMISM_GOERLI, //1
         AVALANCHE_FUJI, //2
         ARBITRUM_GOERLI, //3
-        POLYGON_MUMBAI //4
+        POLYGON_AMOY //4
     }
 
     mapping(SupportedNetworks enumValue => string humanReadableName)
@@ -85,12 +85,13 @@ contract Helper is Script{
         LINK
     }
 
-    // Chain IDs
+    // Chain IDs --DESTINATION CHAIN SELECTOR
     uint64 constant chainIdEthereumSepolia = 16015286601757825753;
     uint64 constant chainIdOptimismGoerli = 2664363617261496610;
     uint64 constant chainIdAvalancheFuji = 14767482510784806043;
     uint64 constant chainIdArbitrumTestnet = 6101244977088475029;
-    uint64 constant chainIdPolygonMumbai = 12532609583862916517;
+    //change for Amoy
+    uint64 constant chainIdPolygonAmoy = 12532609583862916517;
 
     // Router addresses
     address constant routerEthereumSepolia =
@@ -101,8 +102,9 @@ contract Helper is Script{
         0x554472a2720E5E7D5D3C817529aBA05EEd5F82D8;
     address constant routerArbitrumTestnet =
         0x88E492127709447A5ABEFdaB8788a15B4567589E;
-    address constant routerPolygonMumbai =
-        0x70499c328e1E2a3c41108bd3730F6670a44595D1;
+    //change for Amoy
+    address constant routerPolygonAmoy =
+        0x9C32fCB86BF0f4a1A8921a9Fe46de3198bb884B2;
 
     // Link addresses (can be used as fee)
     address constant linkEthereumSepolia =
@@ -113,8 +115,9 @@ contract Helper is Script{
         0x0b9d5D9136855f6FEc3c0993feE6E9CE8a297846;
     address constant linkArbitrumTestnet =
         0xd14838A68E8AFBAdE5efb411d5871ea0011AFd28;
-    address constant linkPolygonMumbai =
-        0x326C977E6efc84E512bB9C30f76E30c160eD06FB;
+    //change for Amoy
+    address constant linkPolygonAmoy =
+        0x0Fd9e8d3aF1aaee056EB9e802c3A762a667b1904;
 
     // Wrapped native addresses
     address constant wethEthereumSepolia =
@@ -125,8 +128,8 @@ contract Helper is Script{
         0xd00ae08403B9bbb9124bB305C09058E32C39A48c;
     address constant wethArbitrumTestnet =
         0x32d5D5978905d9c6c2D4C417F0E06Fe768a4FB5a;
-    address constant wmaticPolygonMumbai =
-        0x9c3C9283D3e44854697Cd22D3Faa240Cfb032889;
+    address constant wmaticPolygonAmoy =
+        0x360ad4f9a9A8EFe9A8DCB5f461c4Cc1047E1Dcf9;
 
     // CCIP-BnM addresses
     address constant ccipBnMEthereumSepolia =
@@ -165,8 +168,8 @@ contract Helper is Script{
             return (ccipBnMArbitrumTestnet, clCcipLnMArbitrumTestnet);
         } else if (network == SupportedNetworks.AVALANCHE_FUJI) {
             return (ccipBnMAvalancheFuji, clCcipLnMAvalancheFuji);
-        } else if (network == SupportedNetworks.POLYGON_MUMBAI) {
-            return (ccipBnMPolygonMumbai, clCcipLnMPolygonMumbai);
+        } else if (network == SupportedNetworks.POLYGON_AMOY) {
+            return (ccipBnMPolygonAmoy, clCcipLnMPolygonAmoy);
         }
     }
 
@@ -210,12 +213,12 @@ contract Helper is Script{
                 wavaxAvalancheFuji,
                 chainIdAvalancheFuji
             );
-        } else if (network == SupportedNetworks.POLYGON_MUMBAI) {
+        } else if (network == SupportedNetworks.POLYGON_AMOY) {
             return (
-                routerPolygonMumbai,
-                linkPolygonMumbai,
-                wmaticPolygonMumbai,
-                chainIdPolygonMumbai
+                routerPolygonAmoy,
+                linkPolygonAmoy,
+                wmaticPolygonAmoy,
+                chainIdPolygonAmoy
             );
         }
     }

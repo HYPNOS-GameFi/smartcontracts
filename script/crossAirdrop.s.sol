@@ -14,7 +14,7 @@ import {ERC1967Proxy} from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.s
 
 
 contract DeployDestination is Script, Helper {
-    function run(SupportedNetworks destination) external {
+    function run(SupportedNetworks destination) external { //destination 4 deve ser na polygon
         uint256 senderPrivateKey = vm.envUint("PRIVATE_KEY");
         vm.startBroadcast(senderPrivateKey);
 
@@ -23,7 +23,7 @@ contract DeployDestination is Script, Helper {
         airdropFarm AidropContract = new airdropFarm();
 
         console2.log(
-            "MyNFT deployed on ",
+            "Airdrop deployed on ",
             networks[destination],
             "with address: ",
             address(AidropContract)

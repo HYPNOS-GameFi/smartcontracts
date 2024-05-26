@@ -1,0 +1,5 @@
+game:
+- sepolia: 0xce734Bf2C512C846C3145a9b02E9cDAB91d1829c
+
+ERC20Mock:
+- sepolia: 0x16b97052ecd465acb2c5ec59df90e3fc61ba9980

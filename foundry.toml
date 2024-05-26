@@ -24,6 +24,7 @@ optimezer_runs = 500000
 # via_ir = true
 ffi = true
 evm_version = 'paris'
+via_ir = true
 
 
 [rpc_endpoints]

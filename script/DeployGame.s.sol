@@ -8,12 +8,73 @@ import {pool} from "../src/pool.sol";
 import {ERC20Mock} from "@openzeppelin/contracts/mocks/token/ERC20Mock.sol";
 import {SubscriptionAPI} from "@chainlink/contracts/src/v0.8/vrf/dev/SubscriptionAPI.sol";
 
+import {hypnosPoint} from "../src/hypnosPoint.sol";
+import {destinationHypnosPoint} from "../src/chainlink/destinationHypnosPoint.sol";
+
 //tba import
 import {ERC1967Proxy} from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 
+
+contract DeployDestination is Script, Helper {
+
+    hypnosPoint public hypnospoint;
+    ERC1967Proxy public hypnospointProxy;
+    address public owner;
+
+     bytes32 public salt = bytes32("Hypnos");
+    //forge script ./script/DeployGame.s.sol:DeployDestination -vvv --broadcast --rpc-url amoy --sig "run(uint8)" -- 4 --verify -vvvv
+    function run(SupportedNetworks destination) external { //destination 4 deve ser na polygon amoy
+        uint256 senderPrivateKey = vm.envUint("PRIVATE_KEY");
+        vm.startBroadcast(senderPrivateKey);
+
+        (address router, , , ) = getConfigFromNetwork(destination);
+
+        //hypnosPoint HypnosPointContract = new hypnosPoint();
+
+        hypnosPoint hypnospointlementation = new hypnosPoint{salt: salt}();
+        bytes memory init = abi.encodeWithSelector(
+            hypnosPoint.initialize.selector,
+            owner,
+            100e18
+        );
+        hypnospointProxy = new ERC1967Proxy{salt: salt}(
+            address(hypnospointlementation),
+            init
+        );
+        hypnospoint = hypnosPoint(payable(hypnospointProxy));
+
+        console.log(
+            "hypnosPoint deployed on ",
+            networks[destination],
+            "with address Proxy: ",
+            address(hypnospoint) //
+        );
+
+        destinationHypnosPoint destinationMinter = new destinationHypnosPoint(
+            router,//pass 4
+            address(hypnospoint)
+        ); //esse vai ser o endereco que iremmos interagir para
+
+        console.log(
+            "destinationHypnosPoint deployed on ",
+            networks[destination],
+            "with address Proxy: ",
+            address(destinationMinter)
+        );
+
+        hypnospoint.transferOwnership(address(destinationMinter));
+        address minter = hypnospoint.owner();
+
+        console.log("Minter role granted to: ", minter);
+
+        vm.stopBroadcast();
+    }
+}
+
+
 contract DeployGame is Script {
     Helper public config;
-    ERC1967Proxy public proxy;
+    ERC1967Proxy public poolProxy;
     HYPNOS_gameFi public game;
     pool public poolContract;
     ERC20Mock public mock;
@@ -39,6 +100,7 @@ contract DeployGame is Script {
     address _priceFeed = 0x9DdfaCa8183c41ad55329BdeeD9F6A8d53168B1B;//change address
     uint256 updateInterval = 15; //change value
 
+    bytes32 public salt = bytes32("PoolGame");
     function run() public {
         config = new Helper();
 
@@ -51,14 +113,18 @@ contract DeployGame is Script {
             mock = new ERC20Mock();
         }
 
+        pool poolContractImplementation = new pool{salt: salt}();
         bytes memory initPool = abi.encodeWithSelector(
             pool.initialize.selector,
             owner,
             address(_priceFeed),
             updateInterval
         );
-
-        poolContract = pool(payable(new ERC1967Proxy(address(poolContract), initPool)));
+        poolProxy = new ERC1967Proxy{salt: salt}(
+            address(poolContractImplementation),
+            initPool
+        );
+        poolContract = pool(payable(poolProxy));
 
 
         game = new HYPNOS_gameFi(vrfCoordinator, keyHash, subscriptionId);
@@ -90,6 +156,6 @@ contract DeployGame is Script {
         vm.stopBroadcast();
 
         console.log("address:", address(game));
-        console.log("address:", address(poolContract));
+        console.log("PoolContract-Proxy:", address(poolContract));
     }
 }

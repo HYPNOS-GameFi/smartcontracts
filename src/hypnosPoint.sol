@@ -114,18 +114,14 @@ contract hypnosPoint is ERC20Upgradeable, SecurityUpgradeable, UUPSUpgradeable {
      * @dev Callable only once.
      * @dev Uses `initializer` from OpenZeppelin's {OwnableUpgradeable}.
      * @param initialOwner: owner of this smart contract.
-     * @param name_: ERC-20 token name.
-     * @param symbol_: ERC-20 token symbol.
      * @param maxSupply: maximum token supply.
      */
     function initialize(
         address initialOwner,
-        string memory name_,
-        string memory symbol_,
         uint256 maxSupply
     ) external initializer {
         
-        __ERC20_init(name_, symbol_);
+        __ERC20_init("HypnosPoint", "HPpoint");
         __Security_init(initialOwner);
 
         s_maxSupply = maxSupply;
@@ -144,6 +140,10 @@ contract hypnosPoint is ERC20Upgradeable, SecurityUpgradeable, UUPSUpgradeable {
      */
     function mint(uint256 amount) external virtual {
         mint(msg.sender, amount);
+    }
+
+    function decimals() public view override returns (uint8) {
+        return 8;
     }
 
     /**

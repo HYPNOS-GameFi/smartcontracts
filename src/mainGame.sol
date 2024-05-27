@@ -16,13 +16,15 @@ import {IVRFCoordinatorV2Plus} from "@chainlink/contracts/src/v0.8/vrf/dev/inter
 import {LinkTokenInterface} from "./interfaces/LinkTokenInterface.sol";
 import {IRouterClient} from "@ccip/ccip/interfaces/IRouterClient.sol";
 import {Client} from "@ccip/ccip/libraries/Client.sol";
+import "@chainlink/contracts/src/v0.8/automation/KeeperCompatible.sol";
 
 
 contract HYPNOS_gameFi is
     ERC721AUpgradeable,
     UUPSUpgradeable,
     SecurityUpgradeable,
-    VRFConsumerBaseV2
+    VRFConsumerBaseV2,
+    KeeperCompatibleInterface
 {
     /// -----------------------------------------------------------------------
     ///                                 Events
@@ -178,6 +180,9 @@ contract HYPNOS_gameFi is
      address constant linkEthereumSepolia =
         0x779877A7B0D9E8603169DdbD7836e478b4624789;
 
+    uint public /*immutable*/ interval;
+    uint public lastTimeStamp;
+
     /// -----------------------------------------------------------------------
     ///                                 Constructor
     /// -----------------------------------------------------------------------
@@ -205,6 +210,7 @@ contract HYPNOS_gameFi is
         uint256 maxSupply_,
         address paymentToken,
         address hypnosPoint_,
+        uint256 updateInterval,
         address pool_,
         uint256 takerFee,
         uint256[4] memory priceClass,
@@ -223,6 +229,9 @@ contract HYPNOS_gameFi is
 
         s_classPrice = priceClass;
         TYPES = typesUri;
+
+        interval = updateInterval;
+        lastTimeStamp = block.timestamp;
     }
 
     /// -----------------------------------------------------------------------
@@ -603,6 +612,44 @@ contract HYPNOS_gameFi is
             tokenId: tokenId
         });
     }
+
+
+    /// -----------------------------------------------------------------------
+    /// Chainlink Automate
+    /// -----------------------------------------------------------------------
+
+     /**
+     * @notice Sets new base URI for the NFT collection.
+     */
+     function checkUpkeep(bytes calldata /* checkData */) external view override returns(bool upkeepNeeded, bytes memory /*performData*/) {
+        upkeepNeeded = (block.timestamp - lastTimeStamp) > interval;
+    }
+
+    function performUpkeep(bytes calldata /*performData*/) external override {
+        if ((block.timestamp - lastTimeStamp) > interval){
+            lastTimeStamp = block.timestamp;
+
+            ////@dev TODO implementar o logica das skills com automate
+        //     int latestSkills = getLatesSkills(); 
+
+        //     if(latestSkills == currentPrice){ //change for currentSkills
+        //         return;
+        //     } 
+        //     if(latestSkills < currentPrice){
+        //         //bear
+        //         updateAllTokenUris("basic");
+        //     } else {
+        //         ///bull
+        //         updateAllTokenUris("luxo");
+        //     }
+
+        // currentPrice = latestSkills;
+        // } else {
+            // interval nor elapsed. intervalo não decorrido. No upkeep
+
+        }
+    }
+
 
     function _authorizeUpgrade(
         address newImplementation

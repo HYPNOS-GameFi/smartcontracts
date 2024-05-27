@@ -193,8 +193,8 @@ contract DeployGame is Script {
             name_,
             symbol_,
             maxSupply_,
-            address(0x6b022ACfAA62c3660B1eB163f557E93D8b246041), //change BetUSD
-            address(0xF90d22a0a22E85a349cbab43325267F360FE210E), //change HypnosPoint
+            address(0x6b022ACfAA62c3660B1eB163f557E93D8b246041), // BetUSD
+            address(0xF90d22a0a22E85a349cbab43325267F360FE210E), // HypnosPoint
             address(0x496Ed42c050ddC451c203E9D1d77b188dA34664C),
             takerFee,
             priceClass,

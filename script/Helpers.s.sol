@@ -85,7 +85,7 @@ contract Helper is Script{
         LINK
     }
 
-    // Chain IDs --DESTINATION or Source CHAIN SELECTOR
+    // Chain IDs
     uint64 constant chainIdEthereumSepolia = 16015286601757825753;
     uint64 constant chainIdOptimismGoerli = 2664363617261496610;
     uint64 constant chainIdAvalancheFuji = 14767482510784806043;
@@ -95,7 +95,7 @@ contract Helper is Script{
 
     // Router addresses
     address constant routerEthereumSepolia =
-        0xD0daae2231E9CB96b94C8512223533293C3693Bf;
+        0x0BF3dE8c5D3e8A2B34D2BEeB17ABfCeBaf363A59;
     address constant routerOptimismGoerli =
         0xEB52E9Ae4A9Fb37172978642d4C141ef53876f26;
     address constant routerAvalancheFuji =

@@ -21,7 +21,7 @@ import { SecurityUpgradeable } from "./security/SecurityUpgradeable.sol";
 /// -----------------------------------------------------------------------
 
 
-contract hypnosPoint is ERC20Upgradeable, SecurityUpgradeable, UUPSUpgradeable {
+contract betUSD is ERC20Upgradeable, SecurityUpgradeable, UUPSUpgradeable {
     /// -----------------------------------------------------------------------
     /// Libraries
     /// -----------------------------------------------------------------------
@@ -81,19 +81,7 @@ contract hypnosPoint is ERC20Upgradeable, SecurityUpgradeable, UUPSUpgradeable {
     /// Modifiers (or internal functions as modifiers)
     /// -----------------------------------------------------------------------
 
-    /**
-     * @dev Checks if minting is possible with the given arguments.
-     * @param to: address to which the token will be minted.
-     * @param amount: amount of tokens to mint.
-     */
-    function _checkMint(address to, uint256 amount) internal virtual {
-        uint256 supply = amount + totalSupply();
-        if (supply > s_maxSupply) revert MaxSupplyReached(supply);
-        unchecked {
-            s_numberMinted[to] += amount;
-        }
-    }
-
+    
     /// -----------------------------------------------------------------------
     /// Initializer/constructor
     /// -----------------------------------------------------------------------
@@ -113,18 +101,14 @@ contract hypnosPoint is ERC20Upgradeable, SecurityUpgradeable, UUPSUpgradeable {
      * @dev This function is required so that the upgradeable proxy is functional.
      * @dev Callable only once.
      * @dev Uses `initializer` from OpenZeppelin's {OwnableUpgradeable}.
-     * @param initialOwner: owner of this smart contract.
-     * @param maxSupply: maximum token supply.
+     * @param initialOwner: owner of this smart contract
      */
     function initialize(
-        address initialOwner,
-        uint256 maxSupply
+        address initialOwner
     ) external initializer {
         
-        __ERC20_init("HypnosPoint", "HPpoint");
+        __ERC20_init("USDC", "USDC");
         __Security_init(initialOwner);
-
-        s_maxSupply = maxSupply;
     }
 
     /// -----------------------------------------------------------------------
@@ -143,7 +127,7 @@ contract hypnosPoint is ERC20Upgradeable, SecurityUpgradeable, UUPSUpgradeable {
     }
 
     function decimals() public view override returns (uint8) {
-        return 8;
+        return 6;
     }
 
     /**
@@ -157,7 +141,6 @@ contract hypnosPoint is ERC20Upgradeable, SecurityUpgradeable, UUPSUpgradeable {
      */
     function mint(address to, uint256 amount) public virtual nonReentrant {
         __whenNotPaused();
-        _checkMint(to, amount);
 
         _mint(to, amount);
     }
@@ -227,25 +210,6 @@ contract hypnosPoint is ERC20Upgradeable, SecurityUpgradeable, UUPSUpgradeable {
 
     //  ==========  Setter functions  ==========
 
-    /**
-     * @notice Sets new token max supply value.
-     * @notice Reverts if given max supply value is greater than total supply (total amount of tokens minted).
-     * @dev Only the contract owner or backend can call this function.
-     * @dev Won't work if contract is paused.
-     * @dev Added nonReentrant modifier from {ReentrancyGuardUpgradeable} smart contract.
-     * @param maxSupply: new maximum token supply value.
-     */
-    function setMaxSupply(uint256 maxSupply) external virtual nonReentrant {
-        __onlyOwner();
-        __whenNotPaused();
-
-        if (maxSupply < totalSupply()) revert InvalidArgument();
-
-        s_maxSupply = maxSupply;
-
-        emit ChangedMaxSupply(msg.sender, maxSupply);
-    }
-
     
     /// -----------------------------------------------------------------------
     /// State-change internal/private functions
@@ -262,14 +226,6 @@ contract hypnosPoint is ERC20Upgradeable, SecurityUpgradeable, UUPSUpgradeable {
     /// -----------------------------------------------------------------------
     /// View public/external functions
     /// -----------------------------------------------------------------------
-
-    /**
-     * @notice Reads s_maxSupply storage variable.
-     * @return uint256 value for maximum supply.
-     */
-    function getMaxSupply() external view virtual returns (uint256) {
-        return s_maxSupply;
-    }
 
     /**
      * @notice Reads s_numberMinted storage mapping.

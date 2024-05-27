@@ -17,6 +17,7 @@ import {LinkTokenInterface} from "./interfaces/LinkTokenInterface.sol";
 import {IRouterClient} from "@ccip/ccip/interfaces/IRouterClient.sol";
 import {Client} from "@ccip/ccip/libraries/Client.sol";
 
+
 contract HYPNOS_gameFi is
     ERC721AUpgradeable,
     UUPSUpgradeable,
@@ -75,6 +76,7 @@ contract HYPNOS_gameFi is
     error NotInChallenge(bytes32 id, uint256 _tokenId);
     error NotAllowed(address _address);
     error CannotBetOnThisType();
+    error FailedToWithdrawEth(address owner, address target, uint256 value);
 
     /// -----------------------------------------------------------------------
     ///                                 Struct
@@ -169,12 +171,12 @@ contract HYPNOS_gameFi is
     uint32 public immutable i_numWords = 1;
     mapping(uint256 requestId => RequestStatus request) public s_requests;
 
-    address constant routerPolygonAmoy =
-        0x9C32fCB86BF0f4a1A8921a9Fe46de3198bb884B2;
-    uint64 constant chainIdPolygonAmoy = 
-        12532609583862916517;
-    address constant linkPolygonAmoy =
-        0x0Fd9e8d3aF1aaee056EB9e802c3A762a667b1904;
+     address constant routerEthereumSepolia =
+        0x0BF3dE8c5D3e8A2B34D2BEeB17ABfCeBaf363A59;
+    uint64 constant chainIdAmoy = 
+        16281711391670634445;
+     address constant linkEthereumSepolia =
+        0x779877A7B0D9E8603169DdbD7836e478b4624789;
 
     /// -----------------------------------------------------------------------
     ///                                 Constructor
@@ -521,24 +523,24 @@ contract HYPNOS_gameFi is
 
     //distribute bet
 
-    function _distributeBet(uint256 _tratedAmount, address to) internal {
+    function _distributeBet(uint256 _tratedAmount, address to) public {
         Client.EVM2AnyMessage memory message = Client.EVM2AnyMessage({
             receiver: abi.encode(hypnosPoint),
             data: abi.encodeWithSignature("mint(address,uint256)", to, _tratedAmount),
             tokenAmounts: new Client.EVMTokenAmount[](0),
             extraArgs: "",
-            feeToken: address(linkPolygonAmoy)
+            feeToken: address(linkEthereumSepolia)
         });
 
-        uint256 fee = IRouterClient(routerPolygonAmoy).getFee(
-            chainIdPolygonAmoy,
+        uint256 fee = IRouterClient(routerEthereumSepolia).getFee(
+            chainIdAmoy,
             message
         );
 
         bytes32 messageId;
-        LinkTokenInterface(linkPolygonAmoy).approve(routerPolygonAmoy, fee);
-            messageId = IRouterClient(routerPolygonAmoy).ccipSend(
-                chainIdPolygonAmoy,
+        LinkTokenInterface(linkEthereumSepolia).approve(routerEthereumSepolia, fee);
+            messageId = IRouterClient(routerEthereumSepolia).ccipSend(
+                chainIdAmoy,
                 message
             );
         emit MessageSent(messageId);
@@ -548,22 +550,36 @@ contract HYPNOS_gameFi is
             data: abi.encodeWithSignature("mint(address,uint256)", to, _tratedAmount),
             tokenAmounts: new Client.EVMTokenAmount[](0),
             extraArgs: "",
-            feeToken: address(linkPolygonAmoy)
+            feeToken: address(linkEthereumSepolia)
         });
-        uint256 feeBet = IRouterClient(routerPolygonAmoy).getFee(
-            chainIdPolygonAmoy,
+        uint256 feeBet = IRouterClient(routerEthereumSepolia).getFee(
+            chainIdAmoy,
             messageBet
         );
 
         bytes32 messageIdBet;
-        LinkTokenInterface(linkPolygonAmoy).approve(routerPolygonAmoy, feeBet);
-            messageIdBet = IRouterClient(routerPolygonAmoy).ccipSend(
-                chainIdPolygonAmoy,
+        LinkTokenInterface(linkEthereumSepolia).approve(routerEthereumSepolia, feeBet);
+            messageIdBet = IRouterClient(routerEthereumSepolia).ccipSend(
+                chainIdAmoy,
                 messageBet
             );
         emit MessageSent(messageId);
         emit MessageSent(messageIdBet);
 
+    }
+
+    function withdraw(address beneficiary) public onlyOwner {
+        uint256 amount = address(this).balance;
+        (bool sent, ) = beneficiary.call{value: amount}("");
+        if (!sent) revert FailedToWithdrawEth(msg.sender, beneficiary, amount);
+    }
+
+    function withdrawToken(
+        address beneficiary,
+        address token
+    ) public onlyOwner {
+        uint256 amount = IERC20(token).balanceOf(address(this));
+        IERC20(token).transfer(beneficiary, amount);
     }
 
     function _vrfRandomizeClass(uint256 tokenId) internal {

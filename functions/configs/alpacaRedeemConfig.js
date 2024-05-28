@@ -5,7 +5,7 @@ const { Location, ReturnType, CodeLanguage } = require("@chainlink/functions-too
 // Configure the request by setting the fields below
 const requestConfig = {
   // String containing the source code to be executed
-  source: fs.readFileSync("./functions/sources/sellTslaAndSendUsdc.js").toString(),
+  source: fs.readFileSync("./functions/sources/sellIbtaETFAndSendUsdc.js").toString(),
   //source: fs.readFileSync("./API-request-example.js").toString(),
   // Location of source code (only Inline is currently supported)
   codeLocation: Location.Inline,

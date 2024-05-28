@@ -47,6 +47,7 @@ contract HelperFunction {
     constructor() {
         chainIdToNetworkConfig[137] = getPolygonConfig();
         chainIdToNetworkConfig[80_001] = getMumbaiConfig();
+        chainIdToNetworkConfig[11155111] = getSepoliaConfig();
         chainIdToNetworkConfig[31_337] = _setupAnvilConfig();
         activeNetworkConfig = chainIdToNetworkConfig[block.chainid];
     }

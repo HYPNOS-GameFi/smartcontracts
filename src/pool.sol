@@ -12,6 +12,9 @@ Implement ERC6551 for create a tokenBOund NFT gaming for user, the benefit is in
 
 import { UUPSUpgradeable } from "@openzeppelin/contracts/proxy/utils/UUPSUpgradeable.sol";
 import {IERC20} from "@ccip/vendor/openzeppelin-solidity/v4.8.3/contracts/token/ERC20/IERC20.sol";
+import { hypnosPoint } from "./hypnosPoint.sol";
+import {betUSD} from "./betUSD.sol";
+import {dIBTAETF} from "./chainlink/dIBTAETF.sol";
 
 
 //  ==========  Chainlink imports  ==========
@@ -29,7 +32,7 @@ import { SecurityUpgradeable } from "./security/SecurityUpgradeable.sol";
 
 
 
-contract pool is  UUPSUpgradeable, SecurityUpgradeable, KeeperCompatibleInterface{
+contract pool is UUPSUpgradeable, SecurityUpgradeable, KeeperCompatibleInterface{
 
 error FailedToWithdrawEth(address owner, address target, uint256 value);
 
@@ -37,11 +40,15 @@ error FailedToWithdrawEth(address owner, address target, uint256 value);
 IPriceAgregadorV3 public priceFeed; //price real time Safra token
 int256 public currentPrice;
 
+uint256 public currentPriceIBTAETF;
+
 //automate
 uint public /*immutable*/ interval;
 uint public lastTimeStamp;
 
-
+address public s_hypnosPoint;
+address public s_betUSD;
+address public s_ibtaetf;
     /// -----------------------------------------------------------------------
     /// Initializer/constructor
     /// -----------------------------------------------------------------------
@@ -69,11 +76,17 @@ uint public lastTimeStamp;
      */
     function initialize(
         address owner_,
-        address _priceFeed,
-        uint256 updateInterval
+        address _priceFeed, //0x5c13b249846540F81c093Bc342b5d963a7518145
+        uint256 updateInterval,//15
+        address betusd_,
+        address hypnospoint_,
+        address dIBTAETF_
     ) external initializer {
         __Security_init(owner_);
 
+        s_hypnosPoint = hypnospoint_;
+        s_betUSD = betusd_;
+        s_ibtaetf = dIBTAETF_;
          ///@dev Chainlink information above
         //sets the keepers update interval
         interval = updateInterval;
@@ -82,7 +95,7 @@ uint public lastTimeStamp;
         // the value of the Safra is updated from the interface contract, 
         //which is updated in real time with the values of the tokenized Safra
         priceFeed = IPriceAgregadorV3(_priceFeed);
-        currentPrice = getLatestPrice();
+        currentPriceIBTAETF = dIBTAETF(s_ibtaetf).getibtaPrice();
     }
 
 
@@ -92,7 +105,7 @@ uint public lastTimeStamp;
     /// -----------------------------------------------------------------------
 
      /**
-     * @notice Sets new base URI for the NFT collection.
+     * @notice Automate whith PriceFeed.
      */
      function checkUpkeep(bytes calldata /* checkData */) external view override returns(bool upkeepNeeded, bytes memory /*performData*/) {
         upkeepNeeded = (block.timestamp - lastTimeStamp) > interval;
@@ -102,22 +115,20 @@ uint public lastTimeStamp;
         if ((block.timestamp - lastTimeStamp) > interval){
             lastTimeStamp = block.timestamp;
 
-            int latestPrice = getLatestPrice(); 
+            uint256 latestPrice = dIBTAETF(s_ibtaetf).getibtaPrice(); 
 
-            if(latestPrice == currentPrice){
+            if(latestPrice == currentPriceIBTAETF){
                 return;
             } 
-            if(latestPrice < currentPrice){
-                //bear
-               ///@TODO buyOrSell("basic"); set buy or sell ETH/USDT
+            if(latestPrice < currentPriceIBTAETF){
+                hypnosPoint(s_hypnosPoint).mint(address(this), 10e8);
             } else {
-                ///bull
-                ///@TODO buyOrSell("luxo"); set buy or sell ETH/USDT
+                betUSD(s_betUSD).mint(address(this), 10e6);
             }
 
-        currentPrice = latestPrice;
+        currentPriceIBTAETF = latestPrice;
         } else {
-            // interval nor elapsed. intervalo não decorrido. No upkeep
+            // interval nor elapsed.
 
         }
     }

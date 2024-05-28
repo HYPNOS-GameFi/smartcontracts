@@ -12,6 +12,7 @@ const uploadSecrets = async () => {
     const gatewayUrls = [
         "https://01.functions-gateway.testnet.chain.link/",
         "https://02.functions-gateway.testnet.chain.link/",
+        "https://01.functions-gateway.testnet.chain.link/user"
     ]
 
     // Initialize ethers signer and provider to interact with the contracts onchain
@@ -42,7 +43,7 @@ const uploadSecrets = async () => {
     // Encrypt secrets and upload to DON
     const encryptedSecretsObj = await secretsManager.encryptSecrets(secrets)
     const slotIdNumber = 0 // slot ID where to upload the secrets
-    const expirationTimeMinutes = 1440 // expiration time in minutes of the secrets, 1440 is 1 day
+    const expirationTimeMinutes = 5440 // expiration time in minutes of the secrets, 1440 is 1 day
     //mude a data de expiracao caso queira mais tempo
 
     console.log(

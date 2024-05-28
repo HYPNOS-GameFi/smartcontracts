@@ -1,3 +1,4 @@
+require('dotenv').config();
 const {
     SecretsManager,
 } = require("@chainlink/functions-toolkit")
@@ -42,7 +43,7 @@ const uploadSecrets = async () => {
     const encryptedSecretsObj = await secretsManager.encryptSecrets(secrets)
     const slotIdNumber = 0 // slot ID where to upload the secrets
     const expirationTimeMinutes = 1440 // expiration time in minutes of the secrets, 1440 is 1 day
-
+    //mude a data de expiracao caso queira mais tempo
 
     console.log(
         `Upload encrypted secret to gateways ${gatewayUrls}. slotId ${slotIdNumber}. Expiration in minutes: ${expirationTimeMinutes}`

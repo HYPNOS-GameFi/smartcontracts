@@ -1,4 +1,5 @@
 const fs = require("fs")
+require('dotenv').config();
 const { Location, ReturnType, CodeLanguage } = require("@chainlink/functions-toolkit")
 
 // Configure the request by setting the fields below

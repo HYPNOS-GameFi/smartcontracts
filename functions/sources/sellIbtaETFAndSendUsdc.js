@@ -4,7 +4,7 @@
 // // 3. Sends USDC -> contract for withdrawl
 
 // // Return 0 on unsuccessful sell 
-
+require('dotenv').config();
 const ASSET_TICKER = "IBTA"
 const CRYPTO_TICKER = "USDCUSD"
 // TODO

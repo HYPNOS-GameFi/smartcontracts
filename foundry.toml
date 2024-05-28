@@ -17,6 +17,7 @@ remappings = [
     "@ERC6551/=lib/reference/src/",
     "@DN404/=lib/dn404/",
 ]
+fs_permissions = [{ access = "read", path = "./" }]
 ###"@chainlink/=lib/chainlink/",
 optimizer = true
 optimezer_runs = 500000

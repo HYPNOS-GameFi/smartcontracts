@@ -1,4 +1,5 @@
 const fs = require("fs")
+require('dotenv').config();
 const { Location, ReturnType, CodeLanguage } = require("@chainlink/functions-toolkit")
 
 // Configure the request by setting the fields below
@@ -12,7 +13,7 @@ const requestConfig = {
   secrets: { alpacaKey: process.env.ALPACA_KEY ?? "", alpacaSecret: process.env.ALPACA_SECRET ?? "" },
   // Optional if secrets are expected in the sourceLocation of secrets (only Remote or DONHosted is supported)
   secretsLocation: Location.DONHosted,
-  // TSLA amount, USDC amount
+  // IBTA amount, USDC amount
   args: ["1", "1"],
   // Code language (only JavaScript is currently supported)
   codeLanguage: CodeLanguage.JavaScript,

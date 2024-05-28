@@ -22,6 +22,7 @@ contract SourceMinter is Withdraw {
 
     event MessageSent(bytes32 messageId);
 
+    ///Deploy in sepolia
     constructor(address router, address link) {
         i_router = router;
         i_link = link;
@@ -30,13 +31,15 @@ contract SourceMinter is Withdraw {
     receive() external payable {}
 
     function mint(
-        uint64 destinationChainSelector,
-        address receiver,
-        PayFeesIn payFeesIn
+        uint64 destinationChainSelector, //Amoy 
+        address receiver, //
+        PayFeesIn payFeesIn, // 1 link
+        address to,
+        uint256 amount
     ) external {
         Client.EVM2AnyMessage memory message = Client.EVM2AnyMessage({
             receiver: abi.encode(receiver),
-            data: abi.encodeWithSignature("mint(address)", msg.sender),
+            data: abi.encodeWithSignature("mint(address,uint256)", to, amount),
             tokenAmounts: new Client.EVMTokenAmount[](0),
             extraArgs: "",
             feeToken: payFeesIn == PayFeesIn.LINK ? i_link : address(0)

@@ -1,0 +1,14 @@
+{
+  "dependencies": {
+    "@chainlink/functions-toolkit": "^0.2.8",
+    "dotenv": "^16.4.5",
+    "prettier": "^3.2.5",
+    "secp256k1": "^5.0.0"
+  },
+  "scripts": {
+    "simulate": "node ./functions/load-env.js && node ./functions/simulators/alpacaMintSimulator.js",
+    "mint": "node ./functions/load-env.js && node ./functions/simulators/alpacaMintSimulator.js",
+    "redeem": "node ./functions/load-env.js && node ./functions/simulators/alpacaRedeemSimulator.js",
+    "uploadSecrets": "node ./functions/load-env.js && node ./functions/uploadSecrets.js"
+  }
+}

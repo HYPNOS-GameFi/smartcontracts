@@ -17,6 +17,7 @@ remappings = [
     "@ERC6551/=lib/reference/src/",
     "@DN404/=lib/dn404/",
 ]
+fs_permissions = [{ access = "read", path = "./" }]
 ###"@chainlink/=lib/chainlink/",
 optimizer = true
 optimezer_runs = 500000
@@ -24,6 +25,7 @@ optimezer_runs = 500000
 # via_ir = true
 ffi = true
 evm_version = 'paris'
+via_ir = true
 
 
 [rpc_endpoints]

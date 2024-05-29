@@ -1,36 +1,29 @@
-
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.23;
 
 //  ==========  External imports  ==========
-import { FunctionsClient } from "@chainlink/contracts/src/v0.8/functions/dev/v1_0_0/FunctionsClient.sol";
+import {FunctionsClient} from "@chainlink/contracts/src/v0.8/functions/dev/v1_0_0/FunctionsClient.sol";
 //import { ConfirmedOwner } from "@chainlink/contracts/src/v0.8/shared/access/ConfirmedOwner.sol";
-import { FunctionsRequest } from "@chainlink/contracts/src/v0.8/functions/dev/v1_0_0/libraries/FunctionsRequest.sol";
-import { ERC20Upgradeable, IERC20 } from "@openzeppelin/contracts-upgradeable/token/ERC20/ERC20Upgradeable.sol";
-import { UUPSUpgradeable } from "@openzeppelin/contracts/proxy/utils/UUPSUpgradeable.sol";
-import { Strings } from "@openzeppelin/contracts/utils/Strings.sol";
+import {FunctionsRequest} from "@chainlink/contracts/src/v0.8/functions/dev/v1_0_0/libraries/FunctionsRequest.sol";
+import {ERC20Upgradeable, IERC20} from "@openzeppelin/contracts-upgradeable/token/ERC20/ERC20Upgradeable.sol";
+import {UUPSUpgradeable} from "@openzeppelin/contracts/proxy/utils/UUPSUpgradeable.sol";
+import {Strings} from "@openzeppelin/contracts/utils/Strings.sol";
 
 //  ==========  Internal imports  ==========
 
-import { SecurityUpgradeable } from "../security/SecurityUpgradeable.sol";
+import {SecurityUpgradeable} from "../security/SecurityUpgradeable.sol";
 
-
-import { OracleLib, AggregatorV3Interface } from "./lib/OracleLib.sol";
-
-
-
+import {OracleLib, AggregatorV3Interface} from "./lib/OracleLib.sol";
 
 /**
  * @title dIBTA ETF
  * @notice This is our contract to make requests to the Alpaca API to mint IBTA-backed dIBTA tokens
  * @dev This contract is meant to be for hackthon chainlink only
  */
-
- contract dIBTAETF is FunctionsClient, ERC20Upgradeable, SecurityUpgradeable, UUPSUpgradeable{
+contract dIBTAETF is FunctionsClient, ERC20Upgradeable, SecurityUpgradeable, UUPSUpgradeable {
     /// -----------------------------------------------------------------------
     /// Libraries
     /// -----------------------------------------------------------------------
-
 
     ///necessary for chainlink
     using FunctionsRequest for FunctionsRequest.Request;
@@ -63,8 +56,8 @@ import { OracleLib, AggregatorV3Interface } from "./lib/OracleLib.sol";
     address s_functionsRouter;
 
     ///@dev as definicoes abaixo sao da regra da API e caso usemos outra devemos rescrever conforme as regras
-    string s_mintSource;//toda vez que chamar chainlink functions sera com esse parametro de API 
-    string s_redeemSource;// ou podemos usar este
+    string s_mintSource; //toda vez que chamar chainlink functions sera com esse parametro de API
+    string s_redeemSource; // ou podemos usar este
 
     // Check to get the donID for your supported network https://docs.chain.link/chainlink-functions/supported-networks
     bytes32 s_donID;
@@ -112,16 +105,15 @@ import { OracleLib, AggregatorV3Interface } from "./lib/OracleLib.sol";
         string memory redeemSource,
         address functionsRouter,
         bytes32 donId,
-        address ibtaPriceFeed,///nao tem na rede da sepolia e usou o Link como simulacao.
+        address ibtaPriceFeed,
+        ///nao tem na rede da sepolia e usou o Link como simulacao.
         //porem, vamos usar o 0x5c13b249846540F81c093Bc342b5d963a7518145 que o ETF IBTA
         ///https://docs.chain.link/data-feeds/price-feeds/addresses?network=ethereum&page=1&search=IBTA#sepolia-testnet
         address usdcPriceFeed,
         address redemptionCoin,
         uint64 secretVersion,
         uint8 secretSlot
-    )
-        FunctionsClient(functionsRouter)
-    {
+    ) FunctionsClient(functionsRouter) {
         _disableInitializers();
         //API below
         s_mintSource = mintSource;
@@ -153,16 +145,10 @@ import { OracleLib, AggregatorV3Interface } from "./lib/OracleLib.sol";
      * @param name_: ERC-20 token name.
      * @param symbol_: ERC-20 token symbol.
      */
-    function initialize(
-        address initialOwner,
-        string memory name_,
-        string memory symbol_
-    ) external initializer {
-        
+    function initialize(address initialOwner, string memory name_, string memory symbol_) external initializer {
         __ERC20_init(name_, symbol_);
         __Security_init(initialOwner);
     }
-
 
     function setSecretVersion(uint64 secretVersion) external onlyOwner {
         s_secretVersion = secretVersion;
@@ -188,9 +174,10 @@ import { OracleLib, AggregatorV3Interface } from "./lib/OracleLib.sol";
         if (_getCollateralRatioAdjustedTotalBalance(amountOfTokensToMint) > s_portfolioBalance) {
             revert dIBTA__NotEnoughCollateral();
         }
-         //Assim ao tentar mandar uma requisicao de mint ele faz o request da API e verifica quanto de ibta ele tem na conta
-         //fazendo essa 
-        FunctionsRequest.Request memory req; ///@dev se formos na library FunctionsRequest.sol conseguimos todos os parametros de request (struct) e linguagem disponivel  
+        //Assim ao tentar mandar uma requisicao de mint ele faz o request da API e verifica quanto de ibta ele tem na conta
+        //fazendo essa
+        FunctionsRequest.Request memory req;
+        ///@dev se formos na library FunctionsRequest.sol conseguimos todos os parametros de request (struct) e linguagem disponivel
         req.initializeRequestForInlineJavaScript(s_mintSource); // Initialize the request with JS code
         ///Podemos usar keys secretas da API com o servico de criptografia seguro da Chainlink
         req.addDONHostedSecrets(s_secretSlot, s_secretVersion);
@@ -248,13 +235,10 @@ import { OracleLib, AggregatorV3Interface } from "./lib/OracleLib.sol";
      * @notice Callback function for fulfilling a request
      * @param requestId The ID of the request to fulfill
      * @param response The HTTP response data
-     */ // vai verificar pela Chainlink se temos LINK para ser executado essa funcao que nela tem o _mint e _redeem dos tokens
-     ////@dev OBS. isso esta bem parecido com o Chainlink Automate.
-    function fulfillRequest(
-        bytes32 requestId,
-        bytes memory response,
-        bytes memory /* err */
-    )
+     */
+    // vai verificar pela Chainlink se temos LINK para ser executado essa funcao que nela tem o _mint e _redeem dos tokens
+    ////@dev OBS. isso esta bem parecido com o Chainlink Automate.
+    function fulfillRequest(bytes32 requestId, bytes memory response, bytes memory /* err */ )
         internal
         override
         whenNotPaused
@@ -276,13 +260,13 @@ import { OracleLib, AggregatorV3Interface } from "./lib/OracleLib.sol";
         }
     }
 
-
     /*//////////////////////////////////////////////////////////////
                                 INTERNAL
     //////////////////////////////////////////////////////////////*/
     function _mintFulFillRequest(bytes32 requestId, bytes memory response) internal {
         uint256 amountOfTokensToMint = s_requestIdToRequest[requestId].amountOfToken;
-        s_portfolioBalance = uint256(bytes32(response)); ///@dev o response e referente a API e verificando se tem o saldo na plataforma referente as acoes q quer tokenizar
+        s_portfolioBalance = uint256(bytes32(response));
+        ///@dev o response e referente a API e verificando se tem o saldo na plataforma referente as acoes q quer tokenizar
 
         if (_getCollateralRatioAdjustedTotalBalance(amountOfTokensToMint) > s_portfolioBalance) {
             revert dIBTA__NotEnoughCollateral();
@@ -333,11 +317,10 @@ import { OracleLib, AggregatorV3Interface } from "./lib/OracleLib.sol";
     /// @inheritdoc UUPSUpgradeable
     /// @dev Only contract owner or backend can call this function.
     /// @dev Won't work if contract is paused.
-    function _authorizeUpgrade(address /*newImplementation*/) internal view virtual override(UUPSUpgradeable) {
+    function _authorizeUpgrade(address /*newImplementation*/ ) internal view virtual override(UUPSUpgradeable) {
         __onlyOwner();
         __whenNotPaused();
     }
-
 
     /*//////////////////////////////////////////////////////////////
                              VIEW AND PURE
@@ -392,6 +375,3 @@ import { OracleLib, AggregatorV3Interface } from "./lib/OracleLib.sol";
         return s_userToWithdrawalAmount[user];
     }
 }
-
-
-

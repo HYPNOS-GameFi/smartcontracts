@@ -5,15 +5,10 @@ import {
     IFunctionsRouter,
     FunctionsResponse
 } from "@chainlink/contracts/src/v0.8/functions/dev/v1_0_0/interfaces/IFunctionsRouter.sol";
-import { IFunctionsClient } from "@chainlink/contracts/src/v0.8/functions/dev/v1_0_0/interfaces/IFunctionsClient.sol";
+import {IFunctionsClient} from "@chainlink/contracts/src/v0.8/functions/dev/v1_0_0/interfaces/IFunctionsClient.sol";
 
 contract MockFunctionsRouter is IFunctionsRouter {
-    function handleOracleFulfillment(
-        address who,
-        bytes32 requestId,
-        bytes memory response,
-        bytes memory err
-    )
+    function handleOracleFulfillment(address who, bytes32 requestId, bytes memory response, bytes memory err)
         external
     {
         IFunctionsClient(who).handleOracleFulfillment(requestId, response, err);
@@ -28,7 +23,7 @@ contract MockFunctionsRouter is IFunctionsRouter {
 
     /// @notice Set the identifier of the route to retrieve the address of the access control contract
     /// The access control contract controls which accounts can manage subscriptions
-    function setAllowListId(bytes32 allowListId) external { }
+    function setAllowListId(bytes32 allowListId) external {}
 
     /// @notice Get the flat fee (in Juels of LINK) that will be paid to the Router owner for operation of the network
     /// @return adminFee
@@ -50,11 +45,7 @@ contract MockFunctionsRouter is IFunctionsRouter {
         uint16 dataVersion,
         uint32 callbackGasLimit,
         bytes32 donId
-    )
-        external
-        pure
-        returns (bytes32)
-    {
+    ) external pure returns (bytes32) {
         return bytes32(keccak256(abi.encodePacked(subscriptionId, data, dataVersion, callbackGasLimit, donId)));
     }
 
@@ -64,11 +55,7 @@ contract MockFunctionsRouter is IFunctionsRouter {
         uint16, /*dataVersion*/
         uint32, /*callbackGasLimit*/
         bytes32 /*donId*/
-    )
-        external
-        pure
-        returns (bytes32)
-    {
+    ) external pure returns (bytes32) {
         return bytes32(0);
     }
 
@@ -79,18 +66,14 @@ contract MockFunctionsRouter is IFunctionsRouter {
         uint96, /*costWithoutFulfillment*/
         address, /*transmitter*/
         FunctionsResponse.Commitment memory /*commitment*/
-    )
-        external
-        pure
-        returns (FunctionsResponse.FulfillResult, uint96)
-    {
+    ) external pure returns (FunctionsResponse.FulfillResult, uint96) {
         return (FunctionsResponse.FulfillResult.FULFILLED, uint96(0));
     }
 
     /// @notice Validate requested gas limit is below the subscription max.
     /// @param subscriptionId subscription ID
     /// @param callbackGasLimit desired callback gas limit
-    function isValidCallbackGasLimit(uint64 subscriptionId, uint32 callbackGasLimit) external view { }
+    function isValidCallbackGasLimit(uint64 subscriptionId, uint32 callbackGasLimit) external view {}
 
     /// @notice Get the current contract given an ID
     /// @return contract The current contract address
@@ -113,17 +96,17 @@ contract MockFunctionsRouter is IFunctionsRouter {
 
     /// @notice Proposes one or more updates to the contract routes
     /// @dev Only callable by owner
-    function proposeContractsUpdate(bytes32[] memory proposalSetIds, address[] memory proposalSetAddresses) external { }
+    function proposeContractsUpdate(bytes32[] memory proposalSetIds, address[] memory proposalSetAddresses) external {}
 
     /// @notice Updates the current contract routes to the proposed contracts
     /// @dev Only callable by owner
-    function updateContracts() external { }
+    function updateContracts() external {}
 
     /// @dev Puts the system into an emergency stopped state.
     /// @dev Only callable by owner
-    function pause() external { }
+    function pause() external {}
 
     /// @dev Takes the system out of an emergency stopped state.
     /// @dev Only callable by owner
-    function unpause() external { }
+    function unpause() external {}
 }

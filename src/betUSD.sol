@@ -2,24 +2,22 @@
 /*solhint-disable compiler-version */
 pragma solidity ^0.8.20;
 
-
 /// -----------------------------------------------------------------------
 /// Imports
 /// -----------------------------------------------------------------------
 
 //  ==========  External imports  ==========
 
-import { ERC20Upgradeable, IERC20 } from "@openzeppelin/contracts-upgradeable/token/ERC20/ERC20Upgradeable.sol";
-import { UUPSUpgradeable } from "@openzeppelin/contracts/proxy/utils/UUPSUpgradeable.sol";
+import {ERC20Upgradeable, IERC20} from "@openzeppelin/contracts-upgradeable/token/ERC20/ERC20Upgradeable.sol";
+import {UUPSUpgradeable} from "@openzeppelin/contracts/proxy/utils/UUPSUpgradeable.sol";
 
 //  ==========  Internal imports  ==========
 
-import { SecurityUpgradeable } from "./security/SecurityUpgradeable.sol";
+import {SecurityUpgradeable} from "./security/SecurityUpgradeable.sol";
 
 /// -----------------------------------------------------------------------
 /// Contract
 /// -----------------------------------------------------------------------
-
 
 contract betUSD is ERC20Upgradeable, SecurityUpgradeable, UUPSUpgradeable {
     /// -----------------------------------------------------------------------
@@ -81,7 +79,6 @@ contract betUSD is ERC20Upgradeable, SecurityUpgradeable, UUPSUpgradeable {
     /// Modifiers (or internal functions as modifiers)
     /// -----------------------------------------------------------------------
 
-    
     /// -----------------------------------------------------------------------
     /// Initializer/constructor
     /// -----------------------------------------------------------------------
@@ -103,10 +100,7 @@ contract betUSD is ERC20Upgradeable, SecurityUpgradeable, UUPSUpgradeable {
      * @dev Uses `initializer` from OpenZeppelin's {OwnableUpgradeable}.
      * @param initialOwner: owner of this smart contract
      */
-    function initialize(
-        address initialOwner
-    ) external initializer {
-        
+    function initialize(address initialOwner) external initializer {
         __ERC20_init("USDC", "USDC");
         __Security_init(initialOwner);
     }
@@ -126,7 +120,7 @@ contract betUSD is ERC20Upgradeable, SecurityUpgradeable, UUPSUpgradeable {
         mint(msg.sender, amount);
     }
 
-    function decimals() public view override returns (uint8) {
+    function decimals() public pure override returns (uint8) {
         return 6;
     }
 
@@ -173,7 +167,7 @@ contract betUSD is ERC20Upgradeable, SecurityUpgradeable, UUPSUpgradeable {
         __whenNotPaused();
         if (tos.length != amounts.length) revert InvalidArgument();
 
-        for (uint256 i = 0; i < tos.length; ) {
+        for (uint256 i = 0; i < tos.length;) {
             _mint(tos[i], amounts[i]);
 
             unchecked {
@@ -210,7 +204,6 @@ contract betUSD is ERC20Upgradeable, SecurityUpgradeable, UUPSUpgradeable {
 
     //  ==========  Setter functions  ==========
 
-    
     /// -----------------------------------------------------------------------
     /// State-change internal/private functions
     /// -----------------------------------------------------------------------
@@ -218,7 +211,7 @@ contract betUSD is ERC20Upgradeable, SecurityUpgradeable, UUPSUpgradeable {
     /// @inheritdoc UUPSUpgradeable
     /// @dev Only contract owner or backend can call this function.
     /// @dev Won't work if contract is paused.
-    function _authorizeUpgrade(address /*newImplementation*/) internal view virtual override(UUPSUpgradeable) {
+    function _authorizeUpgrade(address /*newImplementation*/ ) internal view virtual override(UUPSUpgradeable) {
         __onlyOwner();
         __whenNotPaused();
     }

@@ -2,24 +2,22 @@
 /*solhint-disable compiler-version */
 pragma solidity ^0.8.20;
 
-
 /// -----------------------------------------------------------------------
 /// Imports
 /// -----------------------------------------------------------------------
 
 //  ==========  External imports  ==========
 
-import { ERC20Upgradeable, IERC20 } from "@openzeppelin/contracts-upgradeable/token/ERC20/ERC20Upgradeable.sol";
-import { UUPSUpgradeable } from "@openzeppelin/contracts/proxy/utils/UUPSUpgradeable.sol";
+import {ERC20Upgradeable, IERC20} from "@openzeppelin/contracts-upgradeable/token/ERC20/ERC20Upgradeable.sol";
+import {UUPSUpgradeable} from "@openzeppelin/contracts/proxy/utils/UUPSUpgradeable.sol";
 
 //  ==========  Internal imports  ==========
 
-import { SecurityUpgradeable } from "./security/SecurityUpgradeable.sol";
+import {SecurityUpgradeable} from "./security/SecurityUpgradeable.sol";
 
 /// -----------------------------------------------------------------------
 /// Contract
 /// -----------------------------------------------------------------------
-
 
 contract hypnosPoint is ERC20Upgradeable, SecurityUpgradeable, UUPSUpgradeable {
     /// -----------------------------------------------------------------------
@@ -116,11 +114,7 @@ contract hypnosPoint is ERC20Upgradeable, SecurityUpgradeable, UUPSUpgradeable {
      * @param initialOwner: owner of this smart contract.
      * @param maxSupply: maximum token supply.
      */
-    function initialize(
-        address initialOwner,
-        uint256 maxSupply
-    ) external initializer {
-        
+    function initialize(address initialOwner, uint256 maxSupply) external initializer {
         __ERC20_init("HypnosPoint", "HPpoint");
         __Security_init(initialOwner);
 
@@ -142,7 +136,7 @@ contract hypnosPoint is ERC20Upgradeable, SecurityUpgradeable, UUPSUpgradeable {
         mint(msg.sender, amount);
     }
 
-    function decimals() public view override returns (uint8) {
+    function decimals() public pure override returns (uint8) {
         return 8;
     }
 
@@ -190,7 +184,7 @@ contract hypnosPoint is ERC20Upgradeable, SecurityUpgradeable, UUPSUpgradeable {
         __whenNotPaused();
         if (tos.length != amounts.length) revert InvalidArgument();
 
-        for (uint256 i = 0; i < tos.length; ) {
+        for (uint256 i = 0; i < tos.length;) {
             _mint(tos[i], amounts[i]);
 
             unchecked {
@@ -246,7 +240,6 @@ contract hypnosPoint is ERC20Upgradeable, SecurityUpgradeable, UUPSUpgradeable {
         emit ChangedMaxSupply(msg.sender, maxSupply);
     }
 
-    
     /// -----------------------------------------------------------------------
     /// State-change internal/private functions
     /// -----------------------------------------------------------------------
@@ -254,7 +247,7 @@ contract hypnosPoint is ERC20Upgradeable, SecurityUpgradeable, UUPSUpgradeable {
     /// @inheritdoc UUPSUpgradeable
     /// @dev Only contract owner or backend can call this function.
     /// @dev Won't work if contract is paused.
-    function _authorizeUpgrade(address /*newImplementation*/) internal view virtual override(UUPSUpgradeable) {
+    function _authorizeUpgrade(address /*newImplementation*/ ) internal view virtual override(UUPSUpgradeable) {
         __onlyOwner();
         __whenNotPaused();
     }

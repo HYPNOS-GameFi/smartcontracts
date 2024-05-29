@@ -27,11 +27,9 @@ contract HypnosTest is Test {
     uint256[4] priceClass = [1 ether, 2 ether, 3 ether, 4 ether];
     string[4] types = ["type1", "type2", "type3", "type4"];
 
-    bytes32 public keyHash =
-        0x787d74caea10b2b357790d5b5247c2f63d1d91572a9846f780606e4d953677ae;
+    bytes32 public keyHash = 0x787d74caea10b2b357790d5b5247c2f63d1d91572a9846f780606e4d953677ae;
     address public vrfCoordinator = 0x9DdfaCa8183c41ad55329BdeeD9F6A8d53168B1B;
-    uint256 public subscriptionId =
-        86066367899265651094365220000614482092166546892613257493279963569089616398365;
+    uint256 public subscriptionId = 86066367899265651094365220000614482092166546892613257493279963569089616398365;
 
     function setUp() public {
         config = new Helper();
@@ -57,10 +55,7 @@ contract HypnosTest is Test {
 
         game = HYPNOS_gameFi(address(new ERC1967Proxy(address(game), init)));
 
-        SubscriptionAPI(vrfCoordinator).addConsumer(
-            subscriptionId,
-            address(game)
-        );
+        SubscriptionAPI(vrfCoordinator).addConsumer(subscriptionId, address(game));
 
         vm.stopBroadcast();
 
@@ -81,9 +76,7 @@ contract HypnosTest is Test {
         game.randomizeClass(0);
         assertEq(game.balanceOf(owner), 2);
 
-        vm.expectRevert(
-            IERC721AUpgradeable.OwnerQueryForNonexistentToken.selector
-        );
+        vm.expectRevert(IERC721AUpgradeable.OwnerQueryForNonexistentToken.selector);
         assertEq(game.ownerOf(0), address(0));
 
         vm.roll(block.number + 2);
@@ -96,11 +89,7 @@ contract HypnosTest is Test {
     function test_openChallenge() public returns (bytes32 _id) {
         test_mints();
         vm.startPrank(owner, owner);
-        _id = game.openChallenge(
-            1,
-            HYPNOS_gameFi.challengeType._pointsCash,
-            HYPNOS_gameFi.challengeChoice._12Hours
-        );
+        _id = game.openChallenge(1, HYPNOS_gameFi.challengeType._pointsCash, HYPNOS_gameFi.challengeChoice._12Hours);
         assertEq(keccak256(abi.encode(owner, 1)), _id);
         vm.stopPrank();
     }
@@ -110,7 +99,7 @@ contract HypnosTest is Test {
         vm.startPrank(user, user);
         game.mintClass{value: 1 ether}(HYPNOS_gameFi.shipClass._level1);
         game.pickChallenge(_id, 3);
-        (bool _onChallenge, , , ) = game.shipInfo(user, 3);
+        (bool _onChallenge,,,) = game.shipInfo(user, 3);
         assertEq(_onChallenge, true);
         vm.stopPrank();
     }
@@ -130,8 +119,7 @@ contract HypnosTest is Test {
         assertEq(game.points(user), 0);
         game.playChallenge(3, _id, 100);
         assertEq(game.points(user), 0);
-        (, , , uint256 _points1, , , uint256 _points2, , , , , ) = game
-            .challenges(_id);
+        (,,, uint256 _points1,,, uint256 _points2,,,,,) = game.challenges(_id);
         assertEq(_points1, 0);
         assertEq(_points2, 100);
         vm.stopPrank();
@@ -143,10 +131,7 @@ contract HypnosTest is Test {
         payment.mint(fullUser, 10 ether);
         payment.approve(address(game), 10 ether);
         game.betOnChallenge(_id, 1 ether, 3);
-        (uint256 _amount1, uint256 _amount2) = game.getUserDeposits(
-            fullUser,
-            _id
-        );
+        (uint256 _amount1, uint256 _amount2) = game.getUserDeposits(fullUser, _id);
         assertEq(_amount2, 1 ether);
         // console.log(_amount1,_amount2);
         vm.stopPrank();
@@ -166,7 +151,7 @@ contract HypnosTest is Test {
         game.playChallenge(3, _id, 100);
         vm.stopPrank();
 
-        (bool _finalized, , , , , , , , , , , ) = game.challenges(_id);
+        (bool _finalized,,,,,,,,,,,) = game.challenges(_id);
         // assertEq(game.points(user),200);
 
         assertEq(_finalized, true);

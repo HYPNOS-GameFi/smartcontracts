@@ -8,7 +8,7 @@ pragma solidity ^0.8.23;
 import {ERC721AUpgradeable} from "lib/ERC721A-Upgradeable/contracts/ERC721AUpgradeable.sol";
 import {UUPSUpgradeable} from "lib/openzeppelin-contracts/contracts/proxy/utils/UUPSUpgradeable.sol";
 import {IERC20} from "lib/openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
-import { ERC20Upgradeable, IERC20 } from "@openzeppelin/contracts-upgradeable/token/ERC20/ERC20Upgradeable.sol";
+import {ERC20Upgradeable, IERC20} from "@openzeppelin/contracts-upgradeable/token/ERC20/ERC20Upgradeable.sol";
 import {SecurityUpgradeable} from "./security/SecurityUpgradeable.sol";
 import {VRFConsumerBaseV2} from "@chainlink/contracts/src/v0.8/vrf/VRFConsumerBaseV2.sol";
 import {VRFV2PlusClient} from "@chainlink/contracts/src/v0.8/vrf/dev/libraries/VRFV2PlusClient.sol";
@@ -17,7 +17,6 @@ import {LinkTokenInterface} from "./interfaces/LinkTokenInterface.sol";
 import {IRouterClient} from "@ccip/ccip/interfaces/IRouterClient.sol";
 import {Client} from "@ccip/ccip/libraries/Client.sol";
 import "@chainlink/contracts/src/v0.8/automation/KeeperCompatible.sol";
-
 
 contract HYPNOS_gameFi is
     ERC721AUpgradeable,
@@ -39,30 +38,14 @@ contract HYPNOS_gameFi is
         challengeChoice _choice,
         bytes32 indexed _id
     );
-    event challengeAccepted(
-        address indexed _user,
-        uint256 indexed _tokenId,
-        bytes32 indexed _id
-    );
+    event challengeAccepted(address indexed _user, uint256 indexed _tokenId, bytes32 indexed _id);
     event challengeFinalized(bytes32 indexed _id);
     event updatedPoints(address indexed _address, uint256 indexed _points);
     event updatedChallengePoints(
-        bytes32 indexed _id,
-        uint256 _points1,
-        address _address1,
-        uint256 _points2,
-        address _address2
+        bytes32 indexed _id, uint256 _points1, address _address1, uint256 _points2, address _address2
     );
-    event betedOnChallenge(
-        address indexed _address,
-        uint256 indexed _amount,
-        uint256 _tokenId,
-        bytes32 indexed _id
-    );
-    event MessageSent(
-        bytes32 messageId
-    );
-
+    event betedOnChallenge(address indexed _address, uint256 indexed _amount, uint256 _tokenId, bytes32 indexed _id);
+    event MessageSent(bytes32 messageId);
 
     /// -----------------------------------------------------------------------
     ///                                 Error
@@ -158,8 +141,7 @@ contract HYPNOS_gameFi is
     address public pool;
 
     mapping(shipClass => basicPower) public powerClass;
-    mapping(address user => mapping(uint256 tokenId => ShipInfo info))
-        public shipInfo;
+    mapping(address user => mapping(uint256 tokenId => ShipInfo info)) public shipInfo;
     mapping(uint256 tokenId => string metadata) public _tokenUri;
     mapping(bytes32 challengeID => challenge challengeInfo) public challenges;
     mapping(address user => uint256 points) public points;
@@ -173,25 +155,18 @@ contract HYPNOS_gameFi is
     uint32 public immutable i_numWords = 1;
     mapping(uint256 requestId => RequestStatus request) public s_requests;
 
-     address constant routerEthereumSepolia =
-        0x0BF3dE8c5D3e8A2B34D2BEeB17ABfCeBaf363A59;
-    uint64 constant chainIdAmoy = 
-        16281711391670634445;
-     address constant linkEthereumSepolia =
-        0x779877A7B0D9E8603169DdbD7836e478b4624789;
+    address constant routerEthereumSepolia = 0x0BF3dE8c5D3e8A2B34D2BEeB17ABfCeBaf363A59;
+    uint64 constant chainIdAmoy = 16281711391670634445;
+    address constant linkEthereumSepolia = 0x779877A7B0D9E8603169DdbD7836e478b4624789;
 
-    uint public /*immutable*/ interval;
-    uint public lastTimeStamp;
+    uint256 public /*immutable*/ interval;
+    uint256 public lastTimeStamp;
 
     /// -----------------------------------------------------------------------
     ///                                 Constructor
     /// -----------------------------------------------------------------------
 
-    constructor(
-        address _vrfCoordinator,
-        bytes32 keyHash,
-        uint256 subscriptionId
-    ) VRFConsumerBaseV2(_vrfCoordinator) {
+    constructor(address _vrfCoordinator, bytes32 keyHash, uint256 subscriptionId) VRFConsumerBaseV2(_vrfCoordinator) {
         i_keyHash = keyHash;
         i_subscriptionId = subscriptionId;
         COORDINATOR = IVRFCoordinatorV2Plus(_vrfCoordinator);
@@ -252,25 +227,24 @@ contract HYPNOS_gameFi is
         _burn(_tokenId);
         points[msg.sender] = 0;
 
-        ERC721AUpgradeable._mint(msg.sender, 1 /*VRF VALUE*/);
+        ERC721AUpgradeable._mint(msg.sender, 1 /*VRF VALUE*/ );
 
         _vrfRandomizeClass(_nextTokenId() - 1);
     }
 
-    function openChallenge(
-        uint256 _tokenId,
-        challengeType _type,
-        challengeChoice _duration
-    ) public returns (bytes32 id) {
-        if (ownerOf(_tokenId) != msg.sender)
+    function openChallenge(uint256 _tokenId, challengeType _type, challengeChoice _duration)
+        public
+        returns (bytes32 id)
+    {
+        if (ownerOf(_tokenId) != msg.sender) {
             revert NotOwner(msg.sender, _tokenId);
+        }
 
         id = keccak256(abi.encode(msg.sender, _tokenId));
 
-        if (
-            shipInfo[msg.sender][_tokenId]._onChallenge ||
-            challenges[id]._firstChallenger != address(0)
-        ) revert AlreadyChallenged(msg.sender, _tokenId);
+        if (shipInfo[msg.sender][_tokenId]._onChallenge || challenges[id]._firstChallenger != address(0)) {
+            revert AlreadyChallenged(msg.sender, _tokenId);
+        }
 
         shipInfo[msg.sender][_tokenId]._onChallenge = true;
         shipInfo[msg.sender][_tokenId]._challengeID = id;
@@ -286,28 +260,28 @@ contract HYPNOS_gameFi is
     }
 
     function pickChallenge(bytes32 _id, uint256 _tokenId) public {
-        if (ownerOf(_tokenId) != msg.sender)
+        if (ownerOf(_tokenId) != msg.sender) {
             revert NotOwner(msg.sender, _tokenId);
+        }
 
         if (
-            shipInfo[msg.sender][_tokenId]._onChallenge ||
-            challenges[_id]._firstChallenger == msg.sender ||
-            challenges[_id]._secondChallenger == msg.sender
+            shipInfo[msg.sender][_tokenId]._onChallenge || challenges[_id]._firstChallenger == msg.sender
+                || challenges[_id]._secondChallenger == msg.sender
         ) revert AlreadyChallenged(msg.sender, _tokenId);
 
-        if (challenges[_id]._firstChallenger == address(0))
+        if (challenges[_id]._firstChallenger == address(0)) {
             revert NonExistingChallenge(_id);
+        }
 
-        if (challenges[_id]._secondChallenger != address(0))
+        if (challenges[_id]._secondChallenger != address(0)) {
             revert ChallengeIsActive(_id);
+        }
 
         shipInfo[msg.sender][_tokenId]._onChallenge = true;
         shipInfo[msg.sender][_tokenId]._challengeID = _id;
         challenges[_id]._secondChallenger = msg.sender;
         challenges[_id]._tokenIdC2 = _tokenId;
-        challenges[_id]._challengeTimestamp =
-            block.timestamp +
-            DURATIONS[uint8(challenges[_id]._duration)];
+        challenges[_id]._challengeTimestamp = block.timestamp + DURATIONS[uint8(challenges[_id]._duration)];
 
         emit challengeAccepted(msg.sender, _tokenId, _id);
     }
@@ -316,54 +290,35 @@ contract HYPNOS_gameFi is
 
     // play challenge
 
-    function playChallenge(
-        uint256 _tokenId,
-        bytes32 _id,
-        uint256 _points
-    ) public returns (bool) {
+    function playChallenge(uint256 _tokenId, bytes32 _id, uint256 _points) public returns (bool) {
         _checkAllowed(msg.sender);
 
         if (challenges[_id]._finalized) revert ChallengeIsNotActive(_id);
 
-        if (challenges[_id]._firstChallenger == address(0))
+        if (challenges[_id]._firstChallenger == address(0)) {
             revert NonExistingChallenge(_id);
+        }
 
         if (challenges[_id]._challengeTimestamp < block.timestamp) {
             challenges[_id]._finalized = true;
             emit challengeFinalized(_id);
-        
-        uint256 _aux = ((challenges[_id]._totalAmount1 +
-                    challenges[_id]._totalAmount2) * s_takerFee) / 10000;
+
+            uint256 _aux = ((challenges[_id]._totalAmount1 + challenges[_id]._totalAmount2) * s_takerFee) / 10000;
 
             if (challenges[_id]._type == challengeType._pointsCash) {
                 _distributeBet(_aux, pool);
-                challenges[_id]._totalAmount1 =
-                    (challenges[_id]._totalAmount1 * (10000 - s_takerFee)) /
-                    10000;
-                challenges[_id]._totalAmount2 =
-                    (challenges[_id]._totalAmount2 * (10000 - s_takerFee)) /
-                    10000;
+                challenges[_id]._totalAmount1 = (challenges[_id]._totalAmount1 * (10000 - s_takerFee)) / 10000;
+                challenges[_id]._totalAmount2 = (challenges[_id]._totalAmount2 * (10000 - s_takerFee)) / 10000;
             }
 
-            if (
-                challenges[_id]._firstChallengerPoints >
-                challenges[_id]._secondChallengerPoints
-            ) {
+            if (challenges[_id]._firstChallengerPoints > challenges[_id]._secondChallengerPoints) {
                 points[challenges[_id]._firstChallenger] +=
-                    challenges[_id]._firstChallengerPoints +
-                    challenges[_id]._secondChallengerPoints;
-                emit updatedPoints(
-                    challenges[_id]._firstChallenger,
-                    points[challenges[_id]._firstChallenger]
-                );
+                    challenges[_id]._firstChallengerPoints + challenges[_id]._secondChallengerPoints;
+                emit updatedPoints(challenges[_id]._firstChallenger, points[challenges[_id]._firstChallenger]);
             } else {
                 points[challenges[_id]._secondChallenger] +=
-                    challenges[_id]._firstChallengerPoints +
-                    challenges[_id]._secondChallengerPoints;
-                emit updatedPoints(
-                    challenges[_id]._secondChallenger,
-                    points[challenges[_id]._secondChallenger]
-                );
+                    challenges[_id]._firstChallengerPoints + challenges[_id]._secondChallengerPoints;
+                emit updatedPoints(challenges[_id]._secondChallenger, points[challenges[_id]._secondChallenger]);
             }
 
             return false;
@@ -397,26 +352,20 @@ contract HYPNOS_gameFi is
 
     //bet on challenge
 
-    function betOnChallenge(
-        bytes32 _id,
-        uint256 _amount,
-        uint256 _tokenId
-    ) public {
-        if (challenges[_id]._type != challengeType._pointsCash)
+    function betOnChallenge(bytes32 _id, uint256 _amount, uint256 _tokenId) public {
+        if (challenges[_id]._type != challengeType._pointsCash) {
             revert CannotBetOnThisType();
+        }
 
         if (challenges[_id]._finalized) revert ChallengeIsNotActive(_id);
 
-        if (challenges[_id]._firstChallenger == address(0))
+        if (challenges[_id]._firstChallenger == address(0)) {
             revert NonExistingChallenge(_id);
+        }
 
         require(_amount > 100, "Hypnos: Amount has to be greater than 100");
 
-        bool success = ERC20Upgradeable(betPayment).transferFrom(
-            msg.sender,
-            address(this),
-            _amount
-        );
+        bool success = ERC20Upgradeable(betPayment).transferFrom(msg.sender, address(this), _amount);
         require(success, "Hypnos: betOnChallenge transfer failed");
 
         if (challenges[_id]._tokenIdC1 == _tokenId) {
@@ -436,61 +385,47 @@ contract HYPNOS_gameFi is
     function claimBet(bytes32 _id) public {
         if (!challenges[_id]._finalized) revert ChallengeIsActive(_id);
 
-        if (challenges[_id]._firstChallenger == address(0))
+        if (challenges[_id]._firstChallenger == address(0)) {
             revert NonExistingChallenge(_id);
+        }
 
         uint256 _aux;
 
-        if (
-            challenges[_id]._firstChallengerPoints >
-            challenges[_id]._secondChallengerPoints
-        ) {
-            require(
-                challenges[_id].userDeposits[msg.sender]._amount1 > 100,
-                "Hypnos: not enough betted"
+        if (challenges[_id]._firstChallengerPoints > challenges[_id]._secondChallengerPoints) {
+            require(challenges[_id].userDeposits[msg.sender]._amount1 > 100, "Hypnos: not enough betted");
+            _aux = (
+                (
+                    ((challenges[_id].userDeposits[msg.sender]._amount1 * (10000 - s_takerFee)) / 10000)
+                        * (challenges[_id]._totalAmount1 + challenges[_id]._totalAmount2)
+                ) / challenges[_id]._totalAmount1
             );
-            _aux = ((((challenges[_id].userDeposits[msg.sender]._amount1 *
-                (10000 - s_takerFee)) / 10000) *
-                (challenges[_id]._totalAmount1 +
-                    challenges[_id]._totalAmount2)) /
-                challenges[_id]._totalAmount1);
             // ( user bet side amount / side amount total ) * totalPooled(side 1 total + side 2 total)
         } else {
-            require(
-                challenges[_id].userDeposits[msg.sender]._amount2 > 100,
-                "Hypnos: not enough betted"
+            require(challenges[_id].userDeposits[msg.sender]._amount2 > 100, "Hypnos: not enough betted");
+            _aux = (
+                (
+                    ((challenges[_id].userDeposits[msg.sender]._amount2 * (10000 - s_takerFee)) / 10000)
+                        * (challenges[_id]._totalAmount1 + challenges[_id]._totalAmount2)
+                ) / challenges[_id]._totalAmount2
             );
-            _aux = ((((challenges[_id].userDeposits[msg.sender]._amount2 *
-                (10000 - s_takerFee)) / 10000) *
-                (challenges[_id]._totalAmount1 +
-                    challenges[_id]._totalAmount2)) /
-                challenges[_id]._totalAmount2);
         }
 
         challenges[_id].userClaimed[msg.sender] = true;
-        require(
-            ERC20Upgradeable(betPayment).transfer(msg.sender, _aux),
-            "Hypnos: Claim Bet transfer failed"
-        );
+        require(ERC20Upgradeable(betPayment).transfer(msg.sender, _aux), "Hypnos: Claim Bet transfer failed");
     }
 
     //check if tokenId in a challenge
-    function _beforeTokenTransfers(
-        address from,
-        address /* to */,
-        uint256 startTokenId,
-        uint256 /* quantity */
-    ) internal view override {
+    function _beforeTokenTransfers(address from, address, /* to */ uint256 startTokenId, uint256 /* quantity */ )
+        internal
+        view
+        override
+    {
         require(
-            !shipInfo[from][startTokenId]._onChallenge,
-            "Hypnos: Transfer not possible, this token id is on a challenge"
+            !shipInfo[from][startTokenId]._onChallenge, "Hypnos: Transfer not possible, this token id is on a challenge"
         );
     }
 
-    function fulfillRandomWords(
-        uint256 _requestId,
-        uint256[] memory _randomWords
-    ) internal override {
+    function fulfillRandomWords(uint256 _requestId, uint256[] memory _randomWords) internal override {
         require(s_requests[_requestId].exists, "request not found");
         s_requests[_requestId].fulfilled = true;
 
@@ -504,19 +439,11 @@ contract HYPNOS_gameFi is
     ///                                 Getter
     /// -----------------------------------------------------------------------
 
-    function getUserDeposits(
-        address _address,
-        bytes32 _id
-    ) public view returns (uint256, uint256) {
-        return (
-            challenges[_id].userDeposits[_address]._amount1,
-            challenges[_id].userDeposits[_address]._amount2
-        );
+    function getUserDeposits(address _address, bytes32 _id) public view returns (uint256, uint256) {
+        return (challenges[_id].userDeposits[_address]._amount1, challenges[_id].userDeposits[_address]._amount2);
     }
 
-    function tokenURI(
-        uint256 tokenId
-    ) public view virtual override returns (string memory) {
+    function tokenURI(uint256 tokenId) public view virtual override returns (string memory) {
         if (!_exists(tokenId)) _revert(URIQueryForNonexistentToken.selector);
 
         return string(abi.encodePacked(s_baseUri, _tokenUri[tokenId]));
@@ -541,19 +468,13 @@ contract HYPNOS_gameFi is
             feeToken: address(linkEthereumSepolia)
         });
 
-        uint256 fee = IRouterClient(routerEthereumSepolia).getFee(
-            chainIdAmoy,
-            message
-        );
+        uint256 fee = IRouterClient(routerEthereumSepolia).getFee(chainIdAmoy, message);
 
         bytes32 messageId;
         LinkTokenInterface(linkEthereumSepolia).approve(routerEthereumSepolia, fee);
-            messageId = IRouterClient(routerEthereumSepolia).ccipSend(
-                chainIdAmoy,
-                message
-            );
+        messageId = IRouterClient(routerEthereumSepolia).ccipSend(chainIdAmoy, message);
         emit MessageSent(messageId);
-       
+
         Client.EVM2AnyMessage memory messageBet = Client.EVM2AnyMessage({
             receiver: abi.encode(betPayment),
             data: abi.encodeWithSignature("mint(address,uint256)", to, _tratedAmount),
@@ -561,32 +482,22 @@ contract HYPNOS_gameFi is
             extraArgs: "",
             feeToken: address(linkEthereumSepolia)
         });
-        uint256 feeBet = IRouterClient(routerEthereumSepolia).getFee(
-            chainIdAmoy,
-            messageBet
-        );
+        uint256 feeBet = IRouterClient(routerEthereumSepolia).getFee(chainIdAmoy, messageBet);
 
         bytes32 messageIdBet;
         LinkTokenInterface(linkEthereumSepolia).approve(routerEthereumSepolia, feeBet);
-            messageIdBet = IRouterClient(routerEthereumSepolia).ccipSend(
-                chainIdAmoy,
-                messageBet
-            );
+        messageIdBet = IRouterClient(routerEthereumSepolia).ccipSend(chainIdAmoy, messageBet);
         emit MessageSent(messageId);
         emit MessageSent(messageIdBet);
-
     }
 
     function withdraw(address beneficiary) public onlyOwner {
         uint256 amount = address(this).balance;
-        (bool sent, ) = beneficiary.call{value: amount}("");
+        (bool sent,) = beneficiary.call{value: amount}("");
         if (!sent) revert FailedToWithdrawEth(msg.sender, beneficiary, amount);
     }
 
-    function withdrawToken(
-        address beneficiary,
-        address token
-    ) public onlyOwner {
+    function withdrawToken(address beneficiary, address token) public onlyOwner {
         uint256 amount = IERC20(token).balanceOf(address(this));
         IERC20(token).transfer(beneficiary, amount);
     }
@@ -606,54 +517,50 @@ contract HYPNOS_gameFi is
             })
         );
 
-        s_requests[requestId] = RequestStatus({
-            fulfilled: false,
-            exists: true,
-            tokenId: tokenId
-        });
+        s_requests[requestId] = RequestStatus({fulfilled: false, exists: true, tokenId: tokenId});
     }
-
 
     /// -----------------------------------------------------------------------
     /// Chainlink Automate
     /// -----------------------------------------------------------------------
 
-     /**
+    /**
      * @notice Sets new base URI for the NFT collection.
      */
-     function checkUpkeep(bytes calldata /* checkData */) external view override returns(bool upkeepNeeded, bytes memory /*performData*/) {
+    function checkUpkeep(bytes calldata /* checkData */ )
+        external
+        view
+        override
+        returns (bool upkeepNeeded, bytes memory /*performData*/ )
+    {
         upkeepNeeded = (block.timestamp - lastTimeStamp) > interval;
     }
 
-    function performUpkeep(bytes calldata /*performData*/) external override {
-        if ((block.timestamp - lastTimeStamp) > interval){
+    function performUpkeep(bytes calldata /*performData*/ ) external override {
+        if ((block.timestamp - lastTimeStamp) > interval) {
             lastTimeStamp = block.timestamp;
 
             ////@dev TODO implementar o logica das skills com automate
-        //     int latestSkills = getLatesSkills(); 
+            //     int latestSkills = getLatesSkills();
 
-        //     if(latestSkills == currentPrice){ //change for currentSkills
-        //         return;
-        //     } 
-        //     if(latestSkills < currentPrice){
-        //         //bear
-        //         updateAllTokenUris("basic");
-        //     } else {
-        //         ///bull
-        //         updateAllTokenUris("luxo");
-        //     }
+            //     if(latestSkills == currentPrice){ //change for currentSkills
+            //         return;
+            //     }
+            //     if(latestSkills < currentPrice){
+            //         //bear
+            //         updateAllTokenUris("basic");
+            //     } else {
+            //         ///bull
+            //         updateAllTokenUris("luxo");
+            //     }
 
-        // currentPrice = latestSkills;
-        // } else {
+            // currentPrice = latestSkills;
+            // } else {
             // interval nor elapsed. intervalo não decorrido. No upkeep
-
         }
     }
 
-
-    function _authorizeUpgrade(
-        address newImplementation
-    ) internal override onlyOwner {}
+    function _authorizeUpgrade(address newImplementation) internal override onlyOwner {}
 
     /// -----------------------------------------------------------------------
     ///                                 Controller

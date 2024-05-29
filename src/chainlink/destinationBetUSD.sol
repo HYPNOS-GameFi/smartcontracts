@@ -10,7 +10,7 @@ import {betUSD} from "../betUSD.sol";
  * THIS IS AN EXAMPLE CONTRACT THAT USES UN-AUDITED CODE.
  * DO NOT USE THIS CODE IN PRODUCTION.
  */
-///Deploy this contract in Amoy -- 
+///Deploy this contract in Amoy --
 contract destinationBetUSD is CCIPReceiver {
     betUSD betusd;
 
@@ -20,10 +20,8 @@ contract destinationBetUSD is CCIPReceiver {
         betusd = betUSD(farmAddress);
     }
 
-    function _ccipReceive(
-        Client.Any2EVMMessage memory message
-    ) internal override {
-        (bool success, ) = address(betusd).call(message.data);
+    function _ccipReceive(Client.Any2EVMMessage memory message) internal override {
+        (bool success,) = address(betusd).call(message.data);
         require(success);
         emit MintCallSuccessfull();
     }

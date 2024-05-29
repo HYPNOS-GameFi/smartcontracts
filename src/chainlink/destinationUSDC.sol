@@ -10,7 +10,7 @@ import {hypnosPoint} from "../hypnosPoint.sol";
  * THIS IS AN EXAMPLE CONTRACT THAT USES UN-AUDITED CODE.
  * DO NOT USE THIS CODE IN PRODUCTION.
  */
-///Deploy this contract in Amoy -- 
+///Deploy this contract in Amoy --
 contract destinationUSDC is CCIPReceiver {
     hypnosPoint hypnospoint;
 
@@ -20,10 +20,8 @@ contract destinationUSDC is CCIPReceiver {
         hypnospoint = hypnosPoint(farmAddress);
     }
 
-    function _ccipReceive(
-        Client.Any2EVMMessage memory message
-    ) internal override {
-        (bool success, ) = address(hypnospoint).call(message.data);
+    function _ccipReceive(Client.Any2EVMMessage memory message) internal override {
+        (bool success,) = address(hypnospoint).call(message.data);
         require(success);
         emit MintCallSuccessfull();
     }

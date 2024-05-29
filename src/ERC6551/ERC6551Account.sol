@@ -19,9 +19,9 @@ contract ERC6551Account is IERC6551Account, IERC6551Executable {
     receive() external payable {}
 
     function execute(
-        address to,//endereco da colecao de NFT
+        address to, //endereco da colecao de NFT
         uint256 value, //0
-        bytes calldata data,//encode ApproveForAll(borrow)
+        bytes calldata data, //encode ApproveForAll(borrow)
         uint8 operation //0
     ) external payable override(IERC6551Executable) returns (bytes memory) {
         if (!_isValidSigner(msg.sender)) {
@@ -70,10 +70,11 @@ contract ERC6551Account is IERC6551Account, IERC6551Executable {
         return IERC721(tokenContract).ownerOf(tokenId);
     }
 
-    function isValidSigner(
-        address signer,
-        bytes calldata /* context */
-    ) external view returns (bytes4 /* magicValue */) {
+    function isValidSigner(address signer, bytes calldata /* context */ )
+        external
+        view
+        returns (bytes4 /* magicValue */ )
+    {
         if (_isValidSigner(signer)) {
             return IERC1271.isValidSignature.selector;
         }
@@ -81,16 +82,10 @@ contract ERC6551Account is IERC6551Account, IERC6551Executable {
         return bytes4(0);
     }
 
-    function supportsInterface(
-        bytes4 interfaceId
-    ) external view virtual returns (bool) {
-        return
-            interfaceId == type(IERC165).interfaceId ||
-            interfaceId == type(IERC20).interfaceId ||
-            interfaceId == type(IERC721).interfaceId ||
-            interfaceId == type(IERC1155).interfaceId ||
-            interfaceId == type(IERC6551Account).interfaceId ||
-            interfaceId == type(IERC6551Executable).interfaceId;
+    function supportsInterface(bytes4 interfaceId) external view virtual returns (bool) {
+        return interfaceId == type(IERC165).interfaceId || interfaceId == type(IERC20).interfaceId
+            || interfaceId == type(IERC721).interfaceId || interfaceId == type(IERC1155).interfaceId
+            || interfaceId == type(IERC6551Account).interfaceId || interfaceId == type(IERC6551Executable).interfaceId;
     }
 
     function _isValidSigner(address signer) private view returns (bool) {

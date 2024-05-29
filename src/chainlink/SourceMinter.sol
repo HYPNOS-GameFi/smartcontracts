@@ -31,9 +31,10 @@ contract SourceMinter is Withdraw {
     receive() external payable {}
 
     function mint(
-        uint64 destinationChainSelector, //Amoy 
+        uint64 destinationChainSelector, //Amoy
         address receiver, //
-        PayFeesIn payFeesIn, // 1 link
+        PayFeesIn payFeesIn,
+        // 1 link
         address to,
         uint256 amount
     ) external {
@@ -45,24 +46,15 @@ contract SourceMinter is Withdraw {
             feeToken: payFeesIn == PayFeesIn.LINK ? i_link : address(0)
         });
 
-        uint256 fee = IRouterClient(i_router).getFee(
-            destinationChainSelector,
-            message
-        );
+        uint256 fee = IRouterClient(i_router).getFee(destinationChainSelector, message);
 
         bytes32 messageId;
 
         if (payFeesIn == PayFeesIn.LINK) {
             LinkTokenInterface(i_link).approve(i_router, fee);
-            messageId = IRouterClient(i_router).ccipSend(
-                destinationChainSelector,
-                message
-            );
+            messageId = IRouterClient(i_router).ccipSend(destinationChainSelector, message);
         } else {
-            messageId = IRouterClient(i_router).ccipSend{value: fee}(
-                destinationChainSelector,
-                message
-            );
+            messageId = IRouterClient(i_router).ccipSend{value: fee}(destinationChainSelector, message);
         }
 
         emit MessageSent(messageId);

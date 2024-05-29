@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
-import { Script } from "forge-std/Script.sol";
-import { HelperFunction } from "./HelperFunction.sol";
-import { dIBTAETF } from "../src/chainlink/dIBTAETF.sol";
-import { IGetTslaReturnTypes } from "../src/interfaces/IGetTslaReturnTypes.sol";
+import {Script} from "forge-std/Script.sol";
+import {HelperFunction} from "./HelperFunction.sol";
+import {dIBTAETF} from "../src/chainlink/dIBTAETF.sol";
+import {IGetTslaReturnTypes} from "../src/interfaces/IGetTslaReturnTypes.sol";
 
 contract DeployDIBTAETF is Script {
     string constant alpacaMintSource = "./functions/sources/alpacaBalance.js";
@@ -81,10 +81,7 @@ contract DeployDIBTAETF is Script {
         address redemptionCoin,
         uint64 secretVersion,
         uint8 secretSlot
-    )
-        public
-        returns (dIBTAETF)
-    {
+    ) public returns (dIBTAETF) {
         dIBTAETF dIbtaETF = new dIBTAETF(
             subId,
             mintSource,

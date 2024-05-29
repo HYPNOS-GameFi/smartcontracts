@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.23;
 
-import { MockV3Aggregator } from "../src/test/mocks/MockV3Aggregator.sol";
-import { MockFunctionsRouter } from "../src/test/mocks/MockFunctionsRouter.sol";
-import { MockUSDC } from "../src/test/mocks/MockUSDC.sol";
-import { MockCCIPRouter } from "@ccip/ccip/test/mocks/MockRouter.sol";
-import { MockLinkToken } from "../src/test/mocks/MockLinkToken.sol";
+import {MockV3Aggregator} from "../src/test/mocks/MockV3Aggregator.sol";
+import {MockFunctionsRouter} from "../src/test/mocks/MockFunctionsRouter.sol";
+import {MockUSDC} from "../src/test/mocks/MockUSDC.sol";
+import {MockCCIPRouter} from "@ccip/ccip/test/mocks/MockRouter.sol";
+import {MockLinkToken} from "../src/test/mocks/MockLinkToken.sol";
 
 contract HelperFunction {
     NetworkConfig public activeNetworkConfig;
@@ -67,7 +67,7 @@ contract HelperFunction {
             ccipChainSelector: 4_051_577_828_743_386_545,
             secretVersion: 0, // fill in!
             secretSlot: 0 // fill in!
-         });
+        });
         // minimumRedemptionAmount: 30e6 // Please see your brokerage for min redemption amounts
         // https://alpaca.markets/support/crypto-wallet-faq
     }
@@ -87,7 +87,7 @@ contract HelperFunction {
             ccipChainSelector: 12_532_609_583_862_916_517,
             secretVersion: 0, // fill in!
             secretSlot: 0 // fill in!
-         });
+        });
         // minimumRedemptionAmount: 30e6 // Please see your brokerage for min redemption amounts
         // https://alpaca.markets/support/crypto-wallet-faq
     }
@@ -108,7 +108,7 @@ contract HelperFunction {
             ccipChainSelector: 16_015_286_601_757_825_753,
             secretVersion: 0, // fill in!
             secretSlot: 0 // fill in!
-         });
+        });
         // minimumRedemptionAmount: 30e6 // Please see your brokerage for min redemption amounts
         // https://alpaca.markets/support/crypto-wallet-faq
     }

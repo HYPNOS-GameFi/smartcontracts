@@ -13,12 +13,14 @@ import {betUSD} from "../src/betUSD.sol";
 import {destinationHypnosPoint} from "../src/chainlink/destinationHypnosPoint.sol";
 import {destinationBetUSD} from "../src/chainlink/destinationBetUSD.sol";
 
+import {HelperFunction} from "./HelperFunction.sol";
+import {dIBTAETF} from "../src/chainlink/dIBTAETF.sol";
+import {IGetTslaReturnTypes} from "../src/interfaces/IGetTslaReturnTypes.sol";
+
 //tba import
 import {ERC1967Proxy} from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 
-
 contract DeployDestination is Script, Helper {
-
     Helper public config;
     hypnosPoint public hypnospoint;
     ERC1967Proxy public hypnospointProxy;
@@ -26,9 +28,11 @@ contract DeployDestination is Script, Helper {
     ERC1967Proxy public betUSDProxy;
     address public owner;
 
-     bytes32 public salt = bytes32("HypnosAndBetUSD");
+    bytes32 public salt = bytes32("HypnosAndBetUSD");
     //forge script ./script/DeployGame.s.sol:DeployDestination -vvv --broadcast --rpc-url amoy --sig "run(uint8)" -- 4 --verify -vvvv
-    function run(SupportedNetworks destination) external { //destination 4 deve ser na polygon amoy
+
+    function run(SupportedNetworks destination) external {
+        //destination 4 deve ser na polygon amoy
         config = new Helper();
 
         (, uint256 key) = config.activeNetworkConfig();
@@ -36,20 +40,13 @@ contract DeployDestination is Script, Helper {
 
         vm.startBroadcast(key);
 
-        (address router, , , ) = getConfigFromNetwork(destination);
+        (address router,,,) = getConfigFromNetwork(destination);
 
         //HypnosPoint in AMOY for CCIP
 
         hypnosPoint hypnospointlementation = new hypnosPoint{salt: salt}();
-        bytes memory init = abi.encodeWithSelector(
-            hypnosPoint.initialize.selector,
-            owner,
-            100e18
-        );
-        hypnospointProxy = new ERC1967Proxy{salt: salt}(
-            address(hypnospointlementation),
-            init
-        );
+        bytes memory init = abi.encodeWithSelector(hypnosPoint.initialize.selector, owner, 100e18);
+        hypnospointProxy = new ERC1967Proxy{salt: salt}(address(hypnospointlementation), init);
         hypnospoint = hypnosPoint(payable(hypnospointProxy));
 
         console.log(
@@ -60,7 +57,7 @@ contract DeployDestination is Script, Helper {
         );
 
         destinationHypnosPoint destinationMinter = new destinationHypnosPoint{salt: salt}(
-            router,//pass 4
+            router, //pass 4
             address(hypnospoint)
         ); //esse vai ser o endereco que iremmos interagir para
 
@@ -79,14 +76,8 @@ contract DeployDestination is Script, Helper {
         //BetUSD in AMOY for CCIP
 
         betUSD betUSDintlementation = new betUSD{salt: salt}();
-        bytes memory initBUSD = abi.encodeWithSelector(
-            betUSD.initialize.selector,
-            owner
-        );
-        betUSDProxy = new ERC1967Proxy{salt: salt}(
-            address(betUSDintlementation),
-            initBUSD
-        );
+        bytes memory initBUSD = abi.encodeWithSelector(betUSD.initialize.selector, owner);
+        betUSDProxy = new ERC1967Proxy{salt: salt}(address(betUSDintlementation), initBUSD);
         betusd = betUSD(payable(betUSDProxy));
 
         console.log(
@@ -97,7 +88,7 @@ contract DeployDestination is Script, Helper {
         );
 
         destinationBetUSD destinationMinterUSD = new destinationBetUSD{salt: salt}(
-            router,//pass 4
+            router, //pass 4
             address(betusd)
         ); //esse vai ser o endereco que iremmos interagir para
 
@@ -117,22 +108,117 @@ contract DeployDestination is Script, Helper {
     }
 
     /*
-  AMOY
-  == Logs ==
-  hypnosPoint deployed on  Polygon Amoy with address Proxy:  0xdF11fbE9C288EA58b4E2Fb6Da03f571710B48129
-  destinationHypnosPoint deployed on  Polygon Amoy with address Proxy:  0xF90d22a0a22E85a349cbab43325267F360FE210E
-  Minter role granted hypnosPoint to:  0xF90d22a0a22E85a349cbab43325267F360FE210E
-  betUSDProxy deployed on  Polygon Amoy with address Proxy:  0x44bE502B660605aea4cC3837e315CDaE7c3A95eC
-  destinationbetusd deployed on  Polygon Amoy with address Proxy:  0x6b022ACfAA62c3660B1eB163f557E93D8b246041
-  Minter role BetUSD granted to:  0x6b022ACfAA62c3660B1eB163f557E93D8b246041
-  */
+    AMOY
+    == Logs ==
+    hypnosPoint deployed on  Polygon Amoy with address Proxy:  0xdF11fbE9C288EA58b4E2Fb6Da03f571710B48129
+    destinationHypnosPoint deployed on  Polygon Amoy with address Proxy:  0xF90d22a0a22E85a349cbab43325267F360FE210E
+    Minter role granted hypnosPoint to:  0xF90d22a0a22E85a349cbab43325267F360FE210E
+    betUSDProxy deployed on  Polygon Amoy with address Proxy:  0x44bE502B660605aea4cC3837e315CDaE7c3A95eC
+    destinationbetusd deployed on  Polygon Amoy with address Proxy:  0x6b022ACfAA62c3660B1eB163f557E93D8b246041
+    Minter role BetUSD granted to:  0x6b022ACfAA62c3660B1eB163f557E93D8b246041
+    */
 }
 
+contract DeployIBTAETF is Script {
+    dIBTAETF public ibtaetf;
+    string constant alpacaMintSource = "./functions/sources/alpacaBalance.js";
+    string constant alpacaRedeemSource = "./functions/sources/alpacaBalance.js";
+
+    function run() external {
+        // Get params
+        IGetTslaReturnTypes.GetTslaReturnType memory tslaReturnType = getdTslaRequirements();
+
+        // Actually deploy
+        vm.startBroadcast();
+        deploydIBTAETF(
+            tslaReturnType.subId,
+            tslaReturnType.mintSource,
+            tslaReturnType.redeemSource,
+            tslaReturnType.functionsRouter,
+            tslaReturnType.donId,
+            tslaReturnType.ibtaFeed,
+            tslaReturnType.usdcFeed,
+            tslaReturnType.redemptionCoin,
+            tslaReturnType.secretVersion,
+            tslaReturnType.secretSlot
+        );
+
+        console.log("dIBTAETF", address(ibtaetf));
+        vm.stopBroadcast();
+    }
+
+    function getdTslaRequirements() public returns (IGetTslaReturnTypes.GetTslaReturnType memory) {
+        HelperFunction helperFunction = new HelperFunction();
+        (
+            address ibtaFeed,
+            address usdcFeed, /*address ethFeed*/
+            ,
+            address functionsRouter,
+            bytes32 donId,
+            uint64 subId,
+            address redemptionCoin,
+            ,
+            ,
+            ,
+            uint64 secretVersion,
+            uint8 secretSlot
+        ) = helperFunction.activeNetworkConfig();
+
+        if (
+            ibtaFeed == address(0) || usdcFeed == address(0) || functionsRouter == address(0) || donId == bytes32(0)
+                || subId == 0
+        ) {
+            revert("something is wrong");
+        }
+        string memory mintSource = vm.readFile(alpacaMintSource);
+        string memory redeemSource = vm.readFile(alpacaRedeemSource);
+        return IGetTslaReturnTypes.GetTslaReturnType(
+            subId,
+            mintSource,
+            redeemSource,
+            functionsRouter,
+            donId,
+            ibtaFeed,
+            usdcFeed,
+            redemptionCoin,
+            secretVersion,
+            secretSlot
+        );
+    }
+
+    function deploydIBTAETF(
+        uint64 subId,
+        string memory mintSource,
+        string memory redeemSource,
+        address functionsRouter,
+        bytes32 donId,
+        address ibtaFeed,
+        address usdcFeed,
+        address redemptionCoin,
+        uint64 secretVersion,
+        uint8 secretSlot
+    ) public returns (dIBTAETF) {
+        dIBTAETF dIbtaETF = new dIBTAETF(
+            subId,
+            mintSource,
+            redeemSource,
+            functionsRouter,
+            donId,
+            ibtaFeed,
+            usdcFeed,
+            redemptionCoin,
+            secretVersion,
+            secretSlot
+        );
+        return dIbtaETF;
+    }
+}
 
 contract DeployGame is Script {
     Helper public config;
     ERC1967Proxy public poolProxy;
     HYPNOS_gameFi public game;
+
     pool public poolContract;
     ERC20Mock public mock;
     bool public deployMock = true;
@@ -147,17 +233,15 @@ contract DeployGame is Script {
     uint256[4] priceClass = [0, 0, 0, 0];
     string[4] types = ["type1", "type2", "type3", "type4"];
 
-    bytes32 public keyHash =
-        0x787d74caea10b2b357790d5b5247c2f63d1d91572a9846f780606e4d953677ae;
+    bytes32 public keyHash = 0x787d74caea10b2b357790d5b5247c2f63d1d91572a9846f780606e4d953677ae;
     address public vrfCoordinator = 0x9DdfaCa8183c41ad55329BdeeD9F6A8d53168B1B;
-    uint256 public subscriptionId =
-        86066367899265651094365220000614482092166546892613257493279963569089616398365;
+    uint256 public subscriptionId = 86066367899265651094365220000614482092166546892613257493279963569089616398365;
 
-    
-    address _priceFeed = 0x1b44F3514812d835EB1BDB0acB33d3fA3351Ee43;//change address
-    uint256 updateInterval = 15; //change value
+    address _priceFeed = 0x694AA1769357215DE4FAC081bf1f309aDC325306; //--ETH/US sepolia;
+    uint256 updateInterval = 15; //15 seconds
 
-    //bytes32 public salt = bytes32("PoolGame");
+    bytes32 public salt = bytes32("PoolGame");
+
     function run() public {
         config = new Helper();
 
@@ -165,24 +249,19 @@ contract DeployGame is Script {
         owner = vm.addr(key);
 
         vm.startBroadcast(key);
-
-        // if (deployMock) {
-        //     mock = new ERC20Mock();
-        // }
-
-        // pool poolContractImplementation = new pool{salt: salt}();
-        // bytes memory initPool = abi.encodeWithSelector(
-        //     pool.initialize.selector,
-        //     owner,
-        //     address(_priceFeed),
-        //     updateInterval
-        // );
-        // poolProxy = new ERC1967Proxy{salt: salt}(
-        //     address(poolContractImplementation),
-        //     initPool
-        // );
-        // poolContract = pool(payable(poolProxy));
-
+        pool poolContractImplementation = new pool{salt: salt}();
+        bytes memory initPool = abi.encodeWithSelector(
+            pool.initialize.selector,
+            owner,
+            address(0x694AA1769357215DE4FAC081bf1f309aDC325306), //ETH/USD
+            updateInterval,
+            address(0x6b022ACfAA62c3660B1eB163f557E93D8b246041), // BetUSD
+            address(0xF90d22a0a22E85a349cbab43325267F360FE210E), // HypnosPoint
+            address(0x80B574FF7B07CB5196e98bA4Ca88dcD5669e1aA8), //IBTAETF
+            owner
+        );
+        poolProxy = new ERC1967Proxy{salt: salt}(address(poolContractImplementation), initPool);
+        poolContract = pool(payable(poolProxy));
 
         game = new HYPNOS_gameFi(vrfCoordinator, keyHash, subscriptionId);
 
@@ -195,7 +274,8 @@ contract DeployGame is Script {
             maxSupply_,
             address(0x6b022ACfAA62c3660B1eB163f557E93D8b246041), // BetUSD
             address(0xF90d22a0a22E85a349cbab43325267F360FE210E), // HypnosPoint
-            address(0x496Ed42c050ddC451c203E9D1d77b188dA34664C),
+            updateInterval,
+            poolContract,
             takerFee,
             priceClass,
             types
@@ -210,16 +290,12 @@ contract DeployGame is Script {
         //     );
         // }
 
-        //game._distributeBet(1000000,0x5bb7dd6a6eb4a440d6C70e1165243190295e290B);
-
-        vm.stopBroadcast();
-
         console.log("address:", address(game));
         console.log("PoolContract-Proxy:", address(poolContract));
-
-        /*== Logs ==
- == Logs ==
-  address: 0xa8bFff5468FFf7eb1A5b849c569bA2F013B3370e
-  PoolContract-Proxy: 0x496Ed42c050ddC451c203E9D1d77b188dA34664C*/
+        vm.stopBroadcast();
     }
+
+    /*== Logs ==
+        address: 0xFeB9A82dC19c4e7B025ea2d5A8eBA691E955B85f
+        PoolContract-Proxy: 0xEA330f4C1FcDE1BbC4Cc13c18573307C4dCA3476*/
 }

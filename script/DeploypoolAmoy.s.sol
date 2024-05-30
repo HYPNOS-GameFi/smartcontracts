@@ -32,8 +32,8 @@ contract Deploy is Script {
             poolAmoy.initialize.selector,
             vm.addr(key),
             updateInterval,
-            address(0x6b022ACfAA62c3660B1eB163f557E93D8b246041), // BetUSD
-            address(0xF90d22a0a22E85a349cbab43325267F360FE210E), // HypnosPoint
+            address(0x44bE502B660605aea4cC3837e315CDaE7c3A95eC), // BetUSD CCIP create
+            address(0xdF11fbE9C288EA58b4E2Fb6Da03f571710B48129), // HypnosPoint CCIP create
             vm.addr(key) //address buyer ETHER
         );
         poolProxy = new ERC1967Proxy(address(poolContractImplementation), initPool);
@@ -43,5 +43,8 @@ contract Deploy is Script {
         vm.stopBroadcast();
         console.log("address Implementation:", address(poolContractImplementation));
         console.log("address Proxy:", address(poolContract));
+        //== Logs ==
+//   address Implementation: 0xCBC1f12279A1687141208B3b972B37DeBD09bD6c
+//   address Proxy: 0xFf3dcCC06fa00CD2AD821B6843FAcd0AF0504bE3
     }
 }

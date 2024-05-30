@@ -114,7 +114,7 @@ contract poolAmoy is UUPSUpgradeable, SecurityUpgradeable, AutomationCompatibleI
             }
             if (latestPriceETH < currentPriceETH) {
                 //ether fallen
-                betUSD(s_betUSD).transfer(s_buyerEther, 100e6);
+                betUSD(s_betUSD).transfer(s_buyerEther, 10e6);
                 //transfer betUSD to dollarize and buy ETHER and other digital assets
                 uint256 idplus = id++;
                 manyTimesETHhasFallen[idplus] = infoForbuyerEther({price: currentPriceETH, time: block.timestamp});

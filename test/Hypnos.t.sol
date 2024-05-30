@@ -3,6 +3,7 @@ pragma solidity ^0.8.13;
 
 import {Test, console} from "forge-std/Test.sol";
 import {HYPNOS_gameFi} from "../src/mainGame.sol";
+import {pool} from "../src/pool.sol";
 import {Mock} from "./utils/mockERC20.sol";
 import {ERC1967Proxy} from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 import {IERC721AUpgradeable} from "lib/ERC721A-Upgradeable/contracts/IERC721AUpgradeable.sol";
@@ -11,7 +12,10 @@ import {Helper} from "../script/Helpers.s.sol";
 
 contract HypnosTest is Test {
     HYPNOS_gameFi public game;
+    ERC1967Proxy public poolProxy;
+    pool public poolContract;
     Mock public payment;
+    Mock public hypnosPoint;
     ERC1967Proxy public uups;
     Helper config;
 
@@ -31,13 +35,29 @@ contract HypnosTest is Test {
     address public vrfCoordinator = 0x9DdfaCa8183c41ad55329BdeeD9F6A8d53168B1B;
     uint256 public subscriptionId = 86066367899265651094365220000614482092166546892613257493279963569089616398365;
 
+    uint256 updateInterval = 15;
+   
     function setUp() public {
         config = new Helper();
         (, uint256 key) = config.activeNetworkConfig();
 
         payment = new Mock("betpayment", "PIX");
+        hypnosPoint = new Mock("Hypnos", "point");
 
         vm.startBroadcast(key);
+
+        pool poolContractImplementation = new pool();
+        bytes memory initPool = abi.encodeWithSelector(
+            pool.initialize.selector,
+            owner,
+            updateInterval,
+            address(payment), // BetUSD
+            address(hypnosPoint), // HypnosPoint
+            owner,
+            owner
+        );
+        poolProxy = new ERC1967Proxy(address(poolContractImplementation), initPool);
+        poolContract = pool(payable(poolProxy));
 
         game = new HYPNOS_gameFi(vrfCoordinator, keyHash, subscriptionId);
         bytes memory init = abi.encodeWithSelector(
@@ -47,7 +67,10 @@ contract HypnosTest is Test {
             name_,
             symbol_,
             maxSupply_,
-            address(payment),
+            address(payment),//payment
+            address(hypnosPoint),//hypnos
+            updateInterval,
+            address(poolContract),
             takerFee,
             priceClass,
             types
@@ -55,7 +78,7 @@ contract HypnosTest is Test {
 
         game = HYPNOS_gameFi(address(new ERC1967Proxy(address(game), init)));
 
-        SubscriptionAPI(vrfCoordinator).addConsumer(subscriptionId, address(game));
+        //SubscriptionAPI(vrfCoordinator).addConsumer(subscriptionId, address(game));
 
         vm.stopBroadcast();
 
@@ -164,5 +187,28 @@ contract HypnosTest is Test {
         game.claimBet(_id);
         assertEq(payment.balanceOf(fullUser), 10.6 ether);
         vm.stopPrank();
+    }
+
+    function test_Upkeep() public{
+        uint256 index = 0;
+        bytes memory perform = "0x00";
+        
+        
+        vm.warp(block.timestamp);
+        poolContract.performUpkeep(perform);
+
+        uint256 last = poolContract.getLatestPriceETH();
+        console.log(last);
+
+        uint256 last2 = poolContract.getLatestPriceETF();
+        console.log(last2);
+
+        vm.warp(block.timestamp);
+        uint256 balanceAfterPayment = payment.balanceOf(address(poolContract));
+        uint256 balanceAfterHypnos = hypnosPoint.balanceOf(address(poolContract));
+        uint256 balanceBeforePayment = payment.balanceOf(owner);
+        uint256 balanceBeforeHypnos = hypnosPoint.balanceOf(owner);
+        //uint256 quantityAfter = poolContract.getQuantityByIndex(index);
+        
     }
 }

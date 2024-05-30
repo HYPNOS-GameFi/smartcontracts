@@ -240,7 +240,7 @@ contract DeployGame is Script {
     address _priceFeed = 0x694AA1769357215DE4FAC081bf1f309aDC325306; //--ETH/US sepolia;
     uint256 updateInterval = 15; //15 seconds
 
-    bytes32 public salt = bytes32("PoolGame");
+    bytes32 public salt = bytes32("PoolGame10");
 
     function run() public {
         config = new Helper();
@@ -253,35 +253,34 @@ contract DeployGame is Script {
         bytes memory initPool = abi.encodeWithSelector(
             pool.initialize.selector,
             owner,
-            address(0x694AA1769357215DE4FAC081bf1f309aDC325306), //ETH/USD
             updateInterval,
             address(0x6b022ACfAA62c3660B1eB163f557E93D8b246041), // BetUSD
             address(0xF90d22a0a22E85a349cbab43325267F360FE210E), // HypnosPoint
-            address(0x80B574FF7B07CB5196e98bA4Ca88dcD5669e1aA8), //IBTAETF
-            owner
+            owner, //address buyer ETHER
+            owner //address buyer ETF Gov
         );
         poolProxy = new ERC1967Proxy{salt: salt}(address(poolContractImplementation), initPool);
         poolContract = pool(payable(poolProxy));
 
-        game = new HYPNOS_gameFi(vrfCoordinator, keyHash, subscriptionId);
+        // game = new HYPNOS_gameFi(vrfCoordinator, keyHash, subscriptionId);
 
-        bytes memory init = abi.encodeWithSelector(
-            HYPNOS_gameFi.initialize.selector,
-            owner,
-            baseURI_,
-            name_,
-            symbol_,
-            maxSupply_,
-            address(0x6b022ACfAA62c3660B1eB163f557E93D8b246041), // BetUSD
-            address(0xF90d22a0a22E85a349cbab43325267F360FE210E), // HypnosPoint
-            updateInterval,
-            poolContract,
-            takerFee,
-            priceClass,
-            types
-        );
+        // bytes memory init = abi.encodeWithSelector(
+        //     HYPNOS_gameFi.initialize.selector,
+        //     owner,
+        //     baseURI_,
+        //     name_,
+        //     symbol_,
+        //     maxSupply_,
+        //     address(0x6b022ACfAA62c3660B1eB163f557E93D8b246041), // BetUSD
+        //     address(0xF90d22a0a22E85a349cbab43325267F360FE210E), // HypnosPoint
+        //     updateInterval,
+        //     address(poolContract),
+        //     takerFee,
+        //     priceClass,
+        //     types
+        // );
 
-        game = HYPNOS_gameFi(address(new ERC1967Proxy(address(game), init)));
+        //game = HYPNOS_gameFi(address(new ERC1967Proxy(address(game), init)));
 
         // if (addComsumer) {
         //     SubscriptionAPI(vrfCoordinator).addConsumer(
@@ -290,7 +289,8 @@ contract DeployGame is Script {
         //     );
         // }
 
-        console.log("address:", address(game));
+       // console.log("address:", address(game));
+       console.log("PoolContract-Implemantation:", address(poolContract));
         console.log("PoolContract-Proxy:", address(poolContract));
         vm.stopBroadcast();
     }

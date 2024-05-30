@@ -23,8 +23,8 @@ contract HYPNOS_gameFi is
     ERC721AUpgradeable,
     UUPSUpgradeable,
     SecurityUpgradeable,
-    VRFConsumerBaseV2,
-    KeeperCompatibleInterface
+    VRFConsumerBaseV2
+    // KeeperCompatibleInterface
 {
     /// -----------------------------------------------------------------------
     ///                                 Events
@@ -61,6 +61,11 @@ contract HYPNOS_gameFi is
     );
     event MessageSent(
         bytes32 messageId
+    );
+
+    event ShipsNewStats(
+        uint256[4] lifePoints,
+        uint256[4] attackPoints
     );
 
 
@@ -171,7 +176,9 @@ contract HYPNOS_gameFi is
     uint32 public immutable i_callbackGasLimit = 100000;
     uint16 public immutable i_requestConfirmations = 3;
     uint32 public immutable i_numWords = 1;
+    uint32 public immutable i_statsNumWords = 8;
     mapping(uint256 requestId => RequestStatus request) public s_requests;
+    uint256 public s_lastRequestId;
 
      address constant routerEthereumSepolia =
         0x0BF3dE8c5D3e8A2B34D2BEeB17ABfCeBaf363A59;
@@ -491,13 +498,40 @@ contract HYPNOS_gameFi is
         uint256 _requestId,
         uint256[] memory _randomWords
     ) internal override {
-        require(s_requests[_requestId].exists, "request not found");
+        require(s_requests[_requestId].exists || s_lastRequestId == _requestId, "request not found");
+        if ( s_lastRequestId == _requestId) {
+            uint256[4] memory lifeStats;
+            uint256[4] memory attackStats;
+            for (uint256 i = 0; i < 4; i++) {
+                lifeStats[i] = _randomWords[i] % 10;
+                attackStats[i] = _randomWords[i+4] % 10;
+            }
+
+            emit ShipsNewStats(lifeStats, attackStats);
+        } else {
         s_requests[_requestId].fulfilled = true;
 
         uint8 randomType = uint8(_randomWords[0] % 4);
         _tokenUri[s_requests[_requestId].tokenId] = TYPES[randomType];
 
         emit RequestFulfilled(_requestId, _randomWords);
+        }
+    }
+
+    function randomizeAircraftStats() public {
+        s_lastRequestId = COORDINATOR.requestRandomWords(
+            VRFV2PlusClient.RandomWordsRequest({
+                keyHash: i_keyHash,
+                subId: i_subscriptionId,
+                requestConfirmations: i_requestConfirmations,
+                callbackGasLimit: i_callbackGasLimit,
+                numWords: i_statsNumWords,
+                extraArgs: VRFV2PlusClient._argsToBytes(
+                    // Set nativePayment to true to pay for VRF requests with Sepolia ETH instead of LINK
+                    VRFV2PlusClient.ExtraArgsV1({nativePayment: false})
+                )
+            })
+        );
     }
 
     /// -----------------------------------------------------------------------
@@ -618,37 +652,37 @@ contract HYPNOS_gameFi is
     /// Chainlink Automate
     /// -----------------------------------------------------------------------
 
-     /**
-     * @notice Sets new base URI for the NFT collection.
-     */
-     function checkUpkeep(bytes calldata /* checkData */) external view override returns(bool upkeepNeeded, bytes memory /*performData*/) {
-        upkeepNeeded = (block.timestamp - lastTimeStamp) > interval;
-    }
+    //  /**
+    //  * @notice Sets new base URI for the NFT collection.
+    //  */
+    //  function checkUpkeep(bytes calldata /* checkData */) external view override returns(bool upkeepNeeded, bytes memory /*performData*/) {
+    //     upkeepNeeded = (block.timestamp - lastTimeStamp) > interval;
+    // }
 
-    function performUpkeep(bytes calldata /*performData*/) external override {
-        if ((block.timestamp - lastTimeStamp) > interval){
-            lastTimeStamp = block.timestamp;
+    // function performUpkeep(bytes calldata /*performData*/) external override {
+    //     if ((block.timestamp - lastTimeStamp) > interval){
+    //         lastTimeStamp = block.timestamp;
 
-            ////@dev TODO implementar o logica das skills com automate
-        //     int latestSkills = getLatesSkills(); 
+    //         ////@dev TODO implementar o logica das skills com automate
+    //     //     int latestSkills = getLatesSkills(); 
 
-        //     if(latestSkills == currentPrice){ //change for currentSkills
-        //         return;
-        //     } 
-        //     if(latestSkills < currentPrice){
-        //         //bear
-        //         updateAllTokenUris("basic");
-        //     } else {
-        //         ///bull
-        //         updateAllTokenUris("luxo");
-        //     }
+    //     //     if(latestSkills == currentPrice){ //change for currentSkills
+    //     //         return;
+    //     //     } 
+    //     //     if(latestSkills < currentPrice){
+    //     //         //bear
+    //     //         updateAllTokenUris("basic");
+    //     //     } else {
+    //     //         ///bull
+    //     //         updateAllTokenUris("luxo");
+    //     //     }
 
-        // currentPrice = latestSkills;
-        // } else {
-            // interval nor elapsed. intervalo não decorrido. No upkeep
+    //     // currentPrice = latestSkills;
+    //     // } else {
+    //         // interval nor elapsed. intervalo não decorrido. No upkeep
 
-        }
-    }
+    //     }
+    // }
 
 
     function _authorizeUpgrade(

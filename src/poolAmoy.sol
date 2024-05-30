@@ -19,17 +19,13 @@ import {IPriceAgregadorV3} from "./interfaces/IPriceAgregadorV3.sol";
 
 import {SecurityUpgradeable} from "./security/SecurityUpgradeable.sol";
 
-contract pool is UUPSUpgradeable, SecurityUpgradeable, AutomationCompatibleInterface {
+contract poolAmoy is UUPSUpgradeable, SecurityUpgradeable, AutomationCompatibleInterface {
     error FailedToWithdrawEth(address owner, address target, uint256 value);
 
     //chainlink priceFeed
 
     IPriceAgregadorV3 public s_priceFeedETH;
     uint256 public currentPriceETH;
-    IPriceAgregadorV3 public s_priceFeedETF;
-    uint256 public currentPriceETF;
-    IPriceAgregadorV3 public s_priceFeedUSD;
-    uint256 public currentPriceUSD;
 
     //automate
     uint256 public /*immutable*/ interval;
@@ -39,7 +35,6 @@ contract pool is UUPSUpgradeable, SecurityUpgradeable, AutomationCompatibleInter
     address public s_betUSD;
 
     address s_buyerEther;
-    address s_buyerGov;
 
     struct infoForbuyerEther {
         uint256 price;
@@ -77,26 +72,21 @@ contract pool is UUPSUpgradeable, SecurityUpgradeable, AutomationCompatibleInter
         uint256 updateInterval, //15
         address betusd_,
         address hypnospoint_,
-        address buyEther_,
-        address buyGov_
+        address buyEther_
     ) external initializer {
         __Security_init(owner_);
 
         s_hypnosPoint = hypnospoint_;
         s_betUSD = betusd_;
         s_buyerEther = buyEther_;
-        s_buyerGov = buyGov_;
         ///@dev Chainlink information above
         //sets the keepers update interval
         interval = updateInterval;
         lastTimeStamp = block.timestamp;
 
-        s_priceFeedETH = IPriceAgregadorV3(0x694AA1769357215DE4FAC081bf1f309aDC325306);
+        s_priceFeedETH = IPriceAgregadorV3(0xF0d50568e3A7e8259E16663972b11910F89BD8e7);
         currentPriceETH = getLatestPriceETH();
 
-        s_priceFeedETF = IPriceAgregadorV3(0xB677bfBc9B09a3469695f40477d05bc9BcB15F50);
-        //iShares $ Treasury Bond 0-1yr UCITS ETF
-        currentPriceETF = getLatestPriceETF();
     }
 
     /// -----------------------------------------------------------------------
@@ -117,21 +107,8 @@ contract pool is UUPSUpgradeable, SecurityUpgradeable, AutomationCompatibleInter
 
     function performUpkeep(bytes calldata /*performData*/ ) external override {
         if ((block.timestamp - lastTimeStamp) > interval) {
-            lastTimeStamp = block.timestamp;
-
-            uint256 latestPriceETF = getLatestPriceETF();
+            lastTimeStamp = block.timestamp;        
             uint256 latestPriceETH = getLatestPriceETH();
-
-            if (latestPriceETF == currentPriceETF) {
-                return;
-            }
-            if (latestPriceETF > currentPriceETF) {
-                //ETF fallen
-                hypnosPoint(s_hypnosPoint).mint(address(this), 1000e8);
-            } else {
-                betUSD(s_betUSD).transfer(s_buyerGov, 1000e6);
-                //transfer betUSD to dollarize and buy government assets
-            }
             if (latestPriceETH == currentPriceETH) {
                 return;
             }
@@ -141,9 +118,11 @@ contract pool is UUPSUpgradeable, SecurityUpgradeable, AutomationCompatibleInter
                 //transfer betUSD to dollarize and buy ETHER and other digital assets
                 uint256 idplus = id++;
                 manyTimesETHhasFallen[idplus] = infoForbuyerEther({price: currentPriceETH, time: block.timestamp});
+            } else {
+            //ether up by hypnosPoint
+            hypnosPoint(s_hypnosPoint).mint(address(this),100e8);
             }
             currentPriceETH = latestPriceETH;
-            currentPriceETF = latestPriceETF;
         } else {
             // interval nor elapsed. intervalo não decorrido. No upkeep
         }
@@ -163,35 +142,7 @@ contract pool is UUPSUpgradeable, SecurityUpgradeable, AutomationCompatibleInter
         return uint256(price); //decimals detail: https://docs.chain.link/docs/data-feeds/price-feeds/addresses/
     } // example price return 3034715771688
 
-    function getLatestPriceETF() public view returns (uint256) {
-        (
-            /*uint80 roundID*/
-            ,
-            int256 price,
-            /*uint startedAt*/
-            ,
-            /*uint timeStamp*/
-            ,
-            /*uint80 answeredInRound*/
-        ) = s_priceFeedETF.latestRoundData();
-        return uint256(price); //decimals detail: https://docs.chain.link/docs/data-feeds/price-feeds/addresses/
-    } // example price return 3034715771688
-
-    function getLatestPriceUSD() public view returns (uint256) {
-        (
-            /*uint80 roundID*/
-            ,
-            int256 price,
-            /*uint startedAt*/
-            ,
-            /*uint timeStamp*/
-            ,
-            /*uint80 answeredInRound*/
-        ) = s_priceFeedUSD.latestRoundData();
-        return uint256(price); //decimals detail: https://docs.chain.link/docs/data-feeds/price-feeds/addresses/
-    } // example price return 3034715771688
-
-    function withdraw(address beneficiary) public onlyOwner {
+        function withdraw(address beneficiary) public onlyOwner {
         uint256 amount = address(this).balance;
         (bool sent,) = beneficiary.call{value: amount}("");
         if (!sent) revert FailedToWithdrawEth(msg.sender, beneficiary, amount);
@@ -212,10 +163,6 @@ contract pool is UUPSUpgradeable, SecurityUpgradeable, AutomationCompatibleInter
 
     function setNewbuyETH(address _buyeth) external onlyOwner {
         s_buyerEther = _buyeth;
-    }
-
-    function setNewbuyGov(address _buygov) external onlyOwner {
-        s_buyerGov = _buygov;
     }
 
     /// -----------------------------------------------------------------------

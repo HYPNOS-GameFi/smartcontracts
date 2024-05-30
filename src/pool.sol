@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.23;
 
-
 import {UUPSUpgradeable} from "@openzeppelin/contracts/proxy/utils/UUPSUpgradeable.sol";
 import {IERC20} from "@ccip/vendor/openzeppelin-solidity/v4.8.3/contracts/token/ERC20/IERC20.sol";
 import {hypnosPoint} from "./hypnosPoint.sol";
@@ -25,15 +24,14 @@ contract pool is UUPSUpgradeable, SecurityUpgradeable, AutomationCompatibleInter
     error FailedToWithdrawEth(address owner, address target, uint256 value);
 
     //chainlink priceFeed
-   
+
     IPriceAgregadorV3 public s_priceFeedETH;
     uint256 public currentPriceETH;
     IPriceAgregadorV3 public s_priceFeedETF;
     uint256 public currentPriceETF;
     IPriceAgregadorV3 public s_priceFeedUSD;
-    uint256 public currentPriceUSD; 
+    uint256 public currentPriceUSD;
 
-    
     //automate
     uint256 public /*immutable*/ interval;
     uint256 public lastTimeStamp;
@@ -44,14 +42,14 @@ contract pool is UUPSUpgradeable, SecurityUpgradeable, AutomationCompatibleInter
     address s_buyerEther;
     address s_buyerGov;
 
-    struct infoForbuyerEther{
+    struct infoForbuyerEther {
         uint256 price;
         uint256 time;
     }
 
     mapping(uint256 id => infoForbuyerEther) public manyTimesETHhasFallen;
-    uint id;
-    
+    uint256 id;
+
     /// -----------------------------------------------------------------------
     /// Initializer/constructor
     /// -----------------------------------------------------------------------
@@ -100,10 +98,7 @@ contract pool is UUPSUpgradeable, SecurityUpgradeable, AutomationCompatibleInter
         s_priceFeedETF = IPriceAgregadorV3(0xB677bfBc9B09a3469695f40477d05bc9BcB15F50);
         //iShares $ Treasury Bond 0-1yr UCITS ETF
         currentPriceETF = getLatestPriceETF();
-        
     }
-
-
 
     /// -----------------------------------------------------------------------
     /// Chainlink functions
@@ -129,33 +124,31 @@ contract pool is UUPSUpgradeable, SecurityUpgradeable, AutomationCompatibleInter
             uint256 latestPriceETH = getLatestPriceETH();
 
             if (latestPriceETF == currentPriceETF) {
-                 return;
-            } if (latestPriceETF > currentPriceETF) {
+                return;
+            }
+            if (latestPriceETF > currentPriceETF) {
                 //ETF fallen
                 hypnosPoint(s_hypnosPoint).mint(address(this), 1000e8);
             } else {
-                betUSD(s_betUSD).transfer(s_buyerGov, 1000e6); 
+                betUSD(s_betUSD).transfer(s_buyerGov, 1000e6);
                 //transfer betUSD to dollarize and buy government assets
             }
             if (latestPriceETH == currentPriceETH) {
-               return;
-            } if (latestPriceETH < currentPriceETH) {
+                return;
+            }
+            if (latestPriceETH < currentPriceETH) {
                 //ether fallen
                 betUSD(s_betUSD).transfer(s_buyerEther, 100e6);
                 //transfer betUSD to dollarize and buy ETHER and other digital assets
                 uint256 idplus = id++;
-                manyTimesETHhasFallen[idplus] = infoForbuyerEther({
-                    price: currentPriceETH,
-                    time: block.timestamp
-                });
-            } 
+                manyTimesETHhasFallen[idplus] = infoForbuyerEther({price: currentPriceETH, time: block.timestamp});
+            }
             currentPriceETH = latestPriceETH;
             currentPriceETF = latestPriceETF;
         } else {
             // interval nor elapsed. intervalo não decorrido. No upkeep
         }
     }
-
 
     function getLatestPriceETH() public view returns (uint256) {
         (
@@ -199,7 +192,6 @@ contract pool is UUPSUpgradeable, SecurityUpgradeable, AutomationCompatibleInter
         return uint256(price); //decimals detail: https://docs.chain.link/docs/data-feeds/price-feeds/addresses/
     } // example price return 3034715771688
 
-
     function withdraw(address beneficiary) public onlyOwner {
         uint256 amount = address(this).balance;
         (bool sent,) = beneficiary.call{value: amount}("");
@@ -223,11 +215,11 @@ contract pool is UUPSUpgradeable, SecurityUpgradeable, AutomationCompatibleInter
         interval = newInterval;
     }
 
-    function setNewbuyETH(address _buyeth)external onlyOwner{
+    function setNewbuyETH(address _buyeth) external onlyOwner {
         s_buyerEther = _buyeth;
     }
 
-    function setNewbuyGov(address _buygov)external onlyOwner{
+    function setNewbuyGov(address _buygov) external onlyOwner {
         s_buyerGov = _buygov;
     }
 
@@ -247,7 +239,4 @@ contract pool is UUPSUpgradeable, SecurityUpgradeable, AutomationCompatibleInter
     }
 
     receive() external payable {}
-
-
-
 }

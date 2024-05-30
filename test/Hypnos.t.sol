@@ -36,7 +36,7 @@ contract HypnosTest is Test {
     uint256 public subscriptionId = 86066367899265651094365220000614482092166546892613257493279963569089616398365;
 
     uint256 updateInterval = 15;
-   
+
     function setUp() public {
         config = new Helper();
         (, uint256 key) = config.activeNetworkConfig();
@@ -67,8 +67,8 @@ contract HypnosTest is Test {
             name_,
             symbol_,
             maxSupply_,
-            address(payment),//payment
-            address(hypnosPoint),//hypnos
+            address(payment), //payment
+            address(hypnosPoint), //hypnos
             updateInterval,
             address(poolContract),
             takerFee,
@@ -189,11 +189,10 @@ contract HypnosTest is Test {
         vm.stopPrank();
     }
 
-    function test_Upkeep() public{
+    function test_Upkeep() public {
         uint256 index = 0;
         bytes memory perform = "0x00";
-        
-        
+
         vm.warp(block.timestamp);
         poolContract.performUpkeep(perform);
 
@@ -209,6 +208,5 @@ contract HypnosTest is Test {
         uint256 balanceBeforePayment = payment.balanceOf(owner);
         uint256 balanceBeforeHypnos = hypnosPoint.balanceOf(owner);
         //uint256 quantityAfter = poolContract.getQuantityByIndex(index);
-        
     }
 }

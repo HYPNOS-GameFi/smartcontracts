@@ -117,6 +117,38 @@ contract DeployDestination is Script, Helper {
     destinationbetusd deployed on  Polygon Amoy with address Proxy:  0x6b022ACfAA62c3660B1eB163f557E93D8b246041
     Minter role BetUSD granted to:  0x6b022ACfAA62c3660B1eB163f557E93D8b246041
     */
+
+    ///OBS: CONTRATOS ACIMA É PARA O CCIP E ESTÃO NA AMOY, ABAIXO O SCRIPT DEVE SER RODADO NA SEPOLIA
+}
+
+contract DeployUSDandPointinSepolia is Script {
+    Helper public config;
+    hypnosPoint public hypnospoint;
+    ERC1967Proxy public hypnospointProxy;
+    betUSD public betusd;
+    ERC1967Proxy public betUSDProxy;
+    address public owner;
+
+    bytes32 public salt = bytes32("HypnosAndBetUSD");
+
+    function run() external {
+        config = new Helper();
+
+        (, uint256 key) = config.activeNetworkConfig();
+        owner = vm.addr(key);
+
+        vm.startBroadcast(key);
+
+        hypnosPoint hypnospointlementation = new hypnosPoint{salt: salt}();
+        bytes memory init = abi.encodeWithSelector(hypnosPoint.initialize.selector, owner, 100e18);
+        hypnospointProxy = new ERC1967Proxy{salt: salt}(address(hypnospointlementation), init);
+        hypnospoint = hypnosPoint(payable(hypnospointProxy));
+
+        betUSD betUSDintlementation = new betUSD{salt: salt}();
+        bytes memory initBUSD = abi.encodeWithSelector(betUSD.initialize.selector, owner);
+        betUSDProxy = new ERC1967Proxy{salt: salt}(address(betUSDintlementation), initBUSD);
+        betusd = betUSD(payable(betUSDProxy));
+    }
 }
 
 contract DeployIBTAETF is Script {
@@ -262,25 +294,25 @@ contract DeployGame is Script {
         poolProxy = new ERC1967Proxy{salt: salt}(address(poolContractImplementation), initPool);
         poolContract = pool(payable(poolProxy));
 
-        // game = new HYPNOS_gameFi(vrfCoordinator, keyHash, subscriptionId);
+        game = new HYPNOS_gameFi(vrfCoordinator, keyHash, subscriptionId);
 
-        // bytes memory init = abi.encodeWithSelector(
-        //     HYPNOS_gameFi.initialize.selector,
-        //     owner,
-        //     baseURI_,
-        //     name_,
-        //     symbol_,
-        //     maxSupply_,
-        //     address(0x6b022ACfAA62c3660B1eB163f557E93D8b246041), // BetUSD
-        //     address(0xF90d22a0a22E85a349cbab43325267F360FE210E), // HypnosPoint
-        //     updateInterval,
-        //     address(poolContract),
-        //     takerFee,
-        //     priceClass,
-        //     types
-        // );
+        bytes memory init = abi.encodeWithSelector(
+            HYPNOS_gameFi.initialize.selector,
+            owner,
+            baseURI_,
+            name_,
+            symbol_,
+            maxSupply_,
+            address(0x6b022ACfAA62c3660B1eB163f557E93D8b246041), // BetUSD
+            address(0xF90d22a0a22E85a349cbab43325267F360FE210E), // HypnosPoint
+            updateInterval,
+            address(poolContract),
+            takerFee,
+            priceClass,
+            types
+        );
 
-        //game = HYPNOS_gameFi(address(new ERC1967Proxy(address(game), init)));
+        game = HYPNOS_gameFi(address(new ERC1967Proxy(address(game), init)));
 
         // if (addComsumer) {
         //     SubscriptionAPI(vrfCoordinator).addConsumer(
@@ -289,8 +321,8 @@ contract DeployGame is Script {
         //     );
         // }
 
-       // console.log("address:", address(game));
-       console.log("PoolContract-Implemantation:", address(poolContract));
+        console.log("address:", address(game));
+        console.log("PoolContract-Implemantation:", address(poolContract));
         console.log("PoolContract-Proxy:", address(poolContract));
         vm.stopBroadcast();
     }

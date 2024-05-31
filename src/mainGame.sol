@@ -149,8 +149,13 @@ contract HYPNOS_gameFi is
     uint256[4] public s_classPrice;
     uint256 public s_takerFee;
 
+    //assets in sepolia
     address public betPayment;
-    address public hypnosPoint;
+
+    ///cross chain CCIP in Amoy
+    address public betUSDAmoy;
+    address public hypnosPointAmoy;
+
     address public pool;
     uint256 public s_mintRandomPrice = 0.25 ether;
 
@@ -207,12 +212,13 @@ contract HYPNOS_gameFi is
         string memory name_,
         string memory symbol_,
         uint256 maxSupply_,
-        address paymentToken,
-        address hypnosPoint_,
+        address betUSDAmoy_,
+        address hypnosPointAmoy_,
         address pool_,
         uint256 takerFee,
         uint256[4] memory priceClass,
-        string[4] memory typesUri
+        string[4] memory typesUri,
+        address betPaymentSepolia_
     ) external initializerERC721A initializer {
         __ERC721A_init(name_, symbol_);
         __Security_init(owner_);
@@ -221,8 +227,11 @@ contract HYPNOS_gameFi is
         s_maxSupply = maxSupply_;
         s_takerFee = takerFee;
 
-        betPayment = paymentToken;
-        hypnosPoint = hypnosPoint_;
+        betUSDAmoy = betUSDAmoy_;
+        hypnosPointAmoy = hypnosPointAmoy_;
+
+        betPayment = betPaymentSepolia_;
+
         pool = pool_;
 
         s_classPrice = priceClass;
@@ -579,7 +588,7 @@ contract HYPNOS_gameFi is
 
     function _distributeBet(uint256 _tratedAmount, address to) public {
         Client.EVM2AnyMessage memory message = Client.EVM2AnyMessage({
-            receiver: abi.encode(hypnosPoint),
+            receiver: abi.encode(hypnosPointAmoy),
             data: abi.encodeWithSignature(
                 "mint(address,uint256)",
                 to,
@@ -607,7 +616,7 @@ contract HYPNOS_gameFi is
         emit MessageSent(messageId);
 
         Client.EVM2AnyMessage memory messageBet = Client.EVM2AnyMessage({
-            receiver: abi.encode(betPayment),
+            receiver: abi.encode(betUSDAmoy),
             data: abi.encodeWithSignature(
                 "mint(address,uint256)",
                 to,

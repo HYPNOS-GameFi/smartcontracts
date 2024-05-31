@@ -2,8 +2,10 @@
 
 
 ## Automates:
-- Polygon Amoy: PoolGame: https://automation.chain.link/polygon-amoy/52424363165676939154904242497028627549788525643488724318262096149633446465396
+- Polygon Amoy - PoolGame: https://automation.chain.link/polygon-amoy/52424363165676939154904242497028627549788525643488724318262096149633446465396
+//owner: 0x4a76115b700C0063273Cf8Eb94071555a2Aa8f03
 
+- Ethereum Sepolia - Hypnos: https://automation.chain.link/sepolia/57463112359095659235238801442621312240599076074831294587969368756242564523084
 
 **Foundry is a blazing fast, portable and modular toolkit for Ethereum application development written in Rust.**
 

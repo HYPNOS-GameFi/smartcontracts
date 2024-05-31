@@ -20,6 +20,8 @@ contract DeployGame is Script {
     Helper public config;
     ERC1967Proxy public gameProxy;
     HYPNOS_gameFi public game;
+    ERC1967Proxy public paymentProxy;
+    betUSD public payment;
     bool public deployMock = true;
     bool addComsumer = true;
 
@@ -46,12 +48,25 @@ contract DeployGame is Script {
 
         vm.startBroadcast(key);
 
+         ///deploy hipnosPoint and betUSD in Sepolia
+
+        betUSD paymentImplementation = new betUSD(
+        );
+
+        bytes memory initPayment = abi.encodeWithSelector(
+            betUSD.initialize.selector,
+            owner);
+        
+        paymentProxy = new ERC1967Proxy(address(paymentImplementation), initPayment);
+        payment = betUSD(payable(paymentProxy));
+
         HYPNOS_gameFi gameimplemantation = new HYPNOS_gameFi(
             vrfCoordinator,
             keyHash,
             subscriptionId
         );
 
+    
         bytes memory init = abi.encodeWithSelector(
             HYPNOS_gameFi.initialize.selector,
             owner,
@@ -59,12 +74,13 @@ contract DeployGame is Script {
             name_,
             symbol_,
             maxSupply_,
-            address(0x6b022ACfAA62c3660B1eB163f557E93D8b246041), // BetUSD moy destination CCIP
+            address(0x6b022ACfAA62c3660B1eB163f557E93D8b246041), // BetUSD Amoy destination CCIP
             address(0xF90d22a0a22E85a349cbab43325267F360FE210E), // HypnosPoint Polygon Amoy destination CCIP
             address(0xFf3dcCC06fa00CD2AD821B6843FAcd0AF0504bE3), //poolGame na polygonAmoy destination CCIP
             takerFee,
             priceClass,
-            types
+            types,
+            address(payment)//in sepolia
         );
 
         gameProxy = new ERC1967Proxy(address(gameimplemantation), init);
@@ -83,5 +99,13 @@ contract DeployGame is Script {
 
         console.log("address implementation:", address(gameimplemantation));
         console.log("game Proxy:", address(game));
+        console.log("Payment Proxy:", address(payment));
     }
+
+    /*final contracts:
+    == Logs ==
+  address implementation: 0x2C5089170e32769AFEb190D1d239B90b23AF29A0
+  game Proxy: 0x42D3BFB62A913451510972bdcf88f372642113D3
+  Payment Proxy: 0xBBDC0fCe795B10eaF11b13EC0e9c370C349fD60f
+    */
 }

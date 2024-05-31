@@ -16,7 +16,6 @@ import {destinationBetUSD} from "../src/chainlink/destinationBetUSD.sol";
 //tba import
 import {ERC1967Proxy} from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 
-
 contract DeployGame is Script {
     Helper public config;
     ERC1967Proxy public gameProxy;
@@ -37,7 +36,7 @@ contract DeployGame is Script {
         0x787d74caea10b2b357790d5b5247c2f63d1d91572a9846f780606e4d953677ae;
     address public vrfCoordinator = 0x9DdfaCa8183c41ad55329BdeeD9F6A8d53168B1B;
     uint256 public subscriptionId =
-        86066367899265651094365220000614482092166546892613257493279963569089616398365;
+        96567368677880215435170564852330740244166011897832844594320589257713968911176;
 
     function run() public {
         config = new Helper();
@@ -47,8 +46,11 @@ contract DeployGame is Script {
 
         vm.startBroadcast(key);
 
-
-        HYPNOS_gameFi gameimplemantation = new HYPNOS_gameFi(vrfCoordinator, keyHash, subscriptionId);
+        HYPNOS_gameFi gameimplemantation = new HYPNOS_gameFi(
+            vrfCoordinator,
+            keyHash,
+            subscriptionId
+        );
 
         bytes memory init = abi.encodeWithSelector(
             HYPNOS_gameFi.initialize.selector,
@@ -81,6 +83,5 @@ contract DeployGame is Script {
 
         console.log("address implementation:", address(gameimplemantation));
         console.log("game Proxy:", address(game));
-
     }
 }

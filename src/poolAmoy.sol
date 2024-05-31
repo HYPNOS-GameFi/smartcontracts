@@ -5,6 +5,7 @@ import {UUPSUpgradeable} from "@openzeppelin/contracts/proxy/utils/UUPSUpgradeab
 import {IERC20} from "@ccip/vendor/openzeppelin-solidity/v4.8.3/contracts/token/ERC20/IERC20.sol";
 import {hypnosPoint} from "./hypnosPoint.sol";
 import {betUSD} from "./betUSD.sol";
+import {HYPNOS_gameFi} from "./mainGame.sol";
 
 //  ==========  Chainlink imports  ==========
 
@@ -33,6 +34,7 @@ contract poolAmoy is UUPSUpgradeable, SecurityUpgradeable, AutomationCompatibleI
 
     address public s_hypnosPoint;
     address public s_betUSD;
+    address public mainGame;
 
     address s_buyerEther;
 
@@ -87,6 +89,12 @@ contract poolAmoy is UUPSUpgradeable, SecurityUpgradeable, AutomationCompatibleI
         s_priceFeedETH = IPriceAgregadorV3(0xF0d50568e3A7e8259E16663972b11910F89BD8e7);
         currentPriceETH = getLatestPriceETH();
 
+    }
+
+    function claimPool()external{
+        uint256 calculate = betUSD(s_betUSD).balanceOf(address(this))*10/1000;
+        betUSD(s_betUSD).transfer(msg.sender, calculate);
+        hypnosPoint(s_hypnosPoint).mint(msg.sender, 10e8);
     }
 
     /// -----------------------------------------------------------------------
@@ -163,6 +171,10 @@ contract poolAmoy is UUPSUpgradeable, SecurityUpgradeable, AutomationCompatibleI
 
     function setNewbuyETH(address _buyeth) external onlyOwner {
         s_buyerEther = _buyeth;
+    }
+
+    function setGame(address _maingame) public {
+        mainGame = _maingame;
     }
 
     /// -----------------------------------------------------------------------

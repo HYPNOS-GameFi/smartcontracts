@@ -44,7 +44,8 @@ contract Deploy is Script {
         console.log("address Implementation:", address(poolContractImplementation));
         console.log("address Proxy:", address(poolContract));
         //== Logs ==
-//   address Implementation: 0xCBC1f12279A1687141208B3b972B37DeBD09bD6c
-//   address Proxy: 0xFf3dcCC06fa00CD2AD821B6843FAcd0AF0504bE3
+// == Logs ==
+//   address Implementation: 0xD874FbA91045f3FAE6FFC7aee24724DaDc8C9EBe
+//   address Proxy: 0xd6A18bEE62E617107942f2EF59d73d153c1E92c1
     }
 }

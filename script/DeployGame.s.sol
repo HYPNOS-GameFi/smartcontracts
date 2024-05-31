@@ -76,7 +76,7 @@ contract DeployGame is Script {
             maxSupply_,
             address(0x6b022ACfAA62c3660B1eB163f557E93D8b246041), // BetUSD Amoy destination CCIP
             address(0xF90d22a0a22E85a349cbab43325267F360FE210E), // HypnosPoint Polygon Amoy destination CCIP
-            address(0xFf3dcCC06fa00CD2AD821B6843FAcd0AF0504bE3), //poolGame na polygonAmoy destination CCIP
+            address(0xd6A18bEE62E617107942f2EF59d73d153c1E92c1), //poolGame na polygonAmoy destination CCIP
             takerFee,
             priceClass,
             types,

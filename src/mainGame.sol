@@ -8,7 +8,7 @@ pragma solidity ^0.8.23;
 import {ERC721AUpgradeable} from "lib/ERC721A-Upgradeable/contracts/ERC721AUpgradeable.sol";
 import {UUPSUpgradeable} from "lib/openzeppelin-contracts/contracts/proxy/utils/UUPSUpgradeable.sol";
 import {IERC20} from "lib/openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
-import { ERC20Upgradeable, IERC20 } from "@openzeppelin/contracts-upgradeable/token/ERC20/ERC20Upgradeable.sol";
+import {ERC20Upgradeable, IERC20} from "@openzeppelin/contracts-upgradeable/token/ERC20/ERC20Upgradeable.sol";
 import {SecurityUpgradeable} from "./security/SecurityUpgradeable.sol";
 import {VRFConsumerBaseV2} from "@chainlink/contracts/src/v0.8/vrf/VRFConsumerBaseV2.sol";
 import {VRFV2PlusClient} from "@chainlink/contracts/src/v0.8/vrf/dev/libraries/VRFV2PlusClient.sol";
@@ -16,7 +16,6 @@ import {IVRFCoordinatorV2Plus} from "@chainlink/contracts/src/v0.8/vrf/dev/inter
 import {LinkTokenInterface} from "./interfaces/LinkTokenInterface.sol";
 import {IRouterClient} from "@ccip/ccip/interfaces/IRouterClient.sol";
 import {Client} from "@ccip/ccip/libraries/Client.sol";
-
 
 contract HYPNOS_gameFi is
     ERC721AUpgradeable,
@@ -57,15 +56,9 @@ contract HYPNOS_gameFi is
         uint256 _tokenId,
         bytes32 indexed _id
     );
-    event MessageSent(
-        bytes32 messageId
-    );
+    event MessageSent(bytes32 messageId);
 
-    event ShipsNewStats(
-        uint256[4] lifePoints,
-        uint256[4] attackPoints
-    );
-
+    event ShipsNewStats(uint256[4] lifePoints, uint256[4] attackPoints);
 
     /// -----------------------------------------------------------------------
     ///                                 Error
@@ -159,6 +152,7 @@ contract HYPNOS_gameFi is
     address public betPayment;
     address public hypnosPoint;
     address public pool;
+    uint256 public s_mintRandomPrice = 0.25 ether;
 
     mapping(shipClass => basicPower) public powerClass;
     mapping(address user => mapping(uint256 tokenId => ShipInfo info))
@@ -168,6 +162,7 @@ contract HYPNOS_gameFi is
     mapping(address user => uint256 points) public points;
     mapping(address addressCaller => bool allowed) public allowed;
 
+    // VRF
     IVRFCoordinatorV2Plus immutable COORDINATOR;
     bytes32 public immutable i_keyHash;
     uint256 public immutable i_subscriptionId;
@@ -177,12 +172,14 @@ contract HYPNOS_gameFi is
     uint32 public immutable i_statsNumWords = 8;
     mapping(uint256 requestId => RequestStatus request) public s_requests;
     uint256 public s_lastRequestId;
+    uint256 public s_updatePeriod = 5 minutes;
+    uint256 public s_lastUpdate;
 
-     address constant routerEthereumSepolia =
+    // CCIP
+    address constant routerEthereumSepolia =
         0x0BF3dE8c5D3e8A2B34D2BEeB17ABfCeBaf363A59;
-    uint64 constant chainIdAmoy = 
-        16281711391670634445;
-     address constant linkEthereumSepolia =
+    uint64 constant chainIdAmoy = 16281711391670634445;
+    address constant linkEthereumSepolia =
         0x779877A7B0D9E8603169DdbD7836e478b4624789;
 
     /// -----------------------------------------------------------------------
@@ -230,7 +227,6 @@ contract HYPNOS_gameFi is
 
         s_classPrice = priceClass;
         TYPES = typesUri;
-
     }
 
     /// -----------------------------------------------------------------------
@@ -243,11 +239,20 @@ contract HYPNOS_gameFi is
         }
 
         ERC721AUpgradeable._mint(msg.sender, 1);
+        _tokenUri[_nextTokenId() - 1] = TYPES[uint8(_class)];
+    }
+
+    function mintRandomize() public payable {
+        if (msg.value != s_mintRandomPrice) {
+            revert NotEnoughForShipPurchase(msg.sender, msg.value);
+        }
+
+        ERC721AUpgradeable._mint(msg.sender, 1);
 
         _vrfRandomizeClass(_nextTokenId() - 1);
     }
 
-    function randomizeClass(uint256 _tokenId) public payable {
+    function randomizeClass(uint256 _tokenId) public {
         _burn(_tokenId);
         points[msg.sender] = 0;
 
@@ -330,9 +335,9 @@ contract HYPNOS_gameFi is
         if (challenges[_id]._challengeTimestamp < block.timestamp) {
             challenges[_id]._finalized = true;
             emit challengeFinalized(_id);
-        
-        uint256 _aux = ((challenges[_id]._totalAmount1 +
-                    challenges[_id]._totalAmount2) * s_takerFee) / 10000;
+
+            uint256 _aux = ((challenges[_id]._totalAmount1 +
+                challenges[_id]._totalAmount2) * s_takerFee) / 10000;
 
             if (challenges[_id]._type == challengeType._pointsCash) {
                 _distributeBet(_aux, pool);
@@ -490,27 +495,37 @@ contract HYPNOS_gameFi is
         uint256 _requestId,
         uint256[] memory _randomWords
     ) internal override {
-        require(s_requests[_requestId].exists || s_lastRequestId == _requestId, "request not found");
-        if ( s_lastRequestId == _requestId) {
+        require(
+            s_requests[_requestId].exists || s_lastRequestId == _requestId,
+            "request not found"
+        );
+        if (s_lastRequestId == _requestId) {
             uint256[4] memory lifeStats;
             uint256[4] memory attackStats;
             for (uint256 i = 0; i < 4; i++) {
                 lifeStats[i] = _randomWords[i] % 10;
-                attackStats[i] = _randomWords[i+4] % 10;
+                attackStats[i] = _randomWords[i + 4] % 10;
             }
 
             emit ShipsNewStats(lifeStats, attackStats);
         } else {
-        s_requests[_requestId].fulfilled = true;
+            s_requests[_requestId].fulfilled = true;
 
-        uint8 randomType = uint8(_randomWords[0] % 4);
-        _tokenUri[s_requests[_requestId].tokenId] = TYPES[randomType];
+            uint8 randomType = uint8(_randomWords[0] % 4);
+            _tokenUri[s_requests[_requestId].tokenId] = TYPES[randomType];
 
-        emit RequestFulfilled(_requestId, _randomWords);
+            emit RequestFulfilled(_requestId, _randomWords);
         }
     }
 
     function randomizeAircraftStats() public {
+        require(
+            block.timestamp >= s_lastUpdate + s_updatePeriod,
+            "in lock period"
+        );
+
+        s_lastUpdate = block.timestamp;
+
         s_lastRequestId = COORDINATOR.requestRandomWords(
             VRFV2PlusClient.RandomWordsRequest({
                 keyHash: i_keyHash,
@@ -524,6 +539,10 @@ contract HYPNOS_gameFi is
                 )
             })
         );
+    }
+
+    function setUpdatePeriod(uint256 newPeriod) public onlyOwner {
+        s_updatePeriod = newPeriod;
     }
 
     /// -----------------------------------------------------------------------
@@ -561,7 +580,11 @@ contract HYPNOS_gameFi is
     function _distributeBet(uint256 _tratedAmount, address to) public {
         Client.EVM2AnyMessage memory message = Client.EVM2AnyMessage({
             receiver: abi.encode(hypnosPoint),
-            data: abi.encodeWithSignature("mint(address,uint256)", to, _tratedAmount),
+            data: abi.encodeWithSignature(
+                "mint(address,uint256)",
+                to,
+                _tratedAmount
+            ),
             tokenAmounts: new Client.EVMTokenAmount[](0),
             extraArgs: "",
             feeToken: address(linkEthereumSepolia)
@@ -573,16 +596,23 @@ contract HYPNOS_gameFi is
         );
 
         bytes32 messageId;
-        LinkTokenInterface(linkEthereumSepolia).approve(routerEthereumSepolia, fee);
-            messageId = IRouterClient(routerEthereumSepolia).ccipSend(
-                chainIdAmoy,
-                message
-            );
+        LinkTokenInterface(linkEthereumSepolia).approve(
+            routerEthereumSepolia,
+            fee
+        );
+        messageId = IRouterClient(routerEthereumSepolia).ccipSend(
+            chainIdAmoy,
+            message
+        );
         emit MessageSent(messageId);
-       
+
         Client.EVM2AnyMessage memory messageBet = Client.EVM2AnyMessage({
             receiver: abi.encode(betPayment),
-            data: abi.encodeWithSignature("mint(address,uint256)", to, _tratedAmount),
+            data: abi.encodeWithSignature(
+                "mint(address,uint256)",
+                to,
+                _tratedAmount
+            ),
             tokenAmounts: new Client.EVMTokenAmount[](0),
             extraArgs: "",
             feeToken: address(linkEthereumSepolia)
@@ -593,14 +623,16 @@ contract HYPNOS_gameFi is
         );
 
         bytes32 messageIdBet;
-        LinkTokenInterface(linkEthereumSepolia).approve(routerEthereumSepolia, feeBet);
-            messageIdBet = IRouterClient(routerEthereumSepolia).ccipSend(
-                chainIdAmoy,
-                messageBet
-            );
+        LinkTokenInterface(linkEthereumSepolia).approve(
+            routerEthereumSepolia,
+            feeBet
+        );
+        messageIdBet = IRouterClient(routerEthereumSepolia).ccipSend(
+            chainIdAmoy,
+            messageBet
+        );
         emit MessageSent(messageId);
         emit MessageSent(messageIdBet);
-
     }
 
     function withdraw(address beneficiary) public onlyOwner {

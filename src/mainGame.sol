@@ -34,17 +34,18 @@ contract HYPNOS_gameFi is
         uint256 indexed _tokenId,
         challengeType _type,
         challengeChoice _choice,
-        uint256 indexed _id
+        uint256 indexed gameid
+
     );
     event challengeAccepted(
         address indexed _user,
         uint256 indexed _tokenId,
-        uint256 indexed _id
+        uint256 indexed gameid
     );
-    event challengeFinalized(uint256 indexed _id);
+    event challengeFinalized(uint256 indexed gameid);
     event updatedPoints(address indexed _address, uint256 indexed _points);
     event updatedChallengePoints(
-        uint256 indexed _id,
+        uint256 indexed gameid,
         uint256 _points1,
         address _address1,
         uint256 _points2,
@@ -54,7 +55,7 @@ contract HYPNOS_gameFi is
         address indexed _address,
         uint256 indexed _amount,
         uint256 _tokenId,
-        uint256 indexed _id
+        uint256 indexed gameid
     );
     event MessageSent(bytes32 messageId);
 
@@ -142,7 +143,7 @@ contract HYPNOS_gameFi is
     ///                                 Storage
     /// -----------------------------------------------------------------------
 
-    uint256[3] public DURATIONS = [12 hours, 24 hours, 48 hours];
+    uint256[3] public DURATIONS = [12 minutes, 24 minutes, 48 minutes];
     string[4] public TYPES;
     string public s_baseUri;
     uint256 public s_maxSupply;

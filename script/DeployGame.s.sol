@@ -103,9 +103,10 @@ contract DeployGame is Script {
     }
 
     /*final contracts:
-    == Logs ==
-  address implementation: 0x2C5089170e32769AFEb190D1d239B90b23AF29A0
-  game Proxy: 0x42D3BFB62A913451510972bdcf88f372642113D3
-  Payment Proxy: 0xBBDC0fCe795B10eaF11b13EC0e9c370C349fD60f
+
+  == Logs ==
+  address implementation: 0x0773555C949f9a3EbD9C0958db3CF7A37AD56546
+  game Proxy: 0x5333E4D34c47B3938257Bcd1b77fDbEaebdA9f76
+  Payment Proxy: 0x59385eC6A82Fcf25582b0085B9d8a3d1A72BB30b
     */
 }

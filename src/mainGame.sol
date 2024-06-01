@@ -34,31 +34,35 @@ contract HYPNOS_gameFi is
         uint256 indexed _tokenId,
         challengeType _type,
         challengeChoice _choice,
-        bytes32 indexed _id
+        uint256 indexed gameid
+
     );
     event challengeAccepted(
         address indexed _user,
         uint256 indexed _tokenId,
-        bytes32 indexed _id
+        uint256 indexed gameid
     );
-    event challengeFinalized(bytes32 indexed _id);
+    event challengeFinalized(uint256 indexed gameid, address _winner);
     event updatedPoints(address indexed _address, uint256 indexed _points);
     event updatedChallengePoints(
-        bytes32 indexed _id,
+        uint256 indexed gameid,
         uint256 _points1,
         address _address1,
         uint256 _points2,
         address _address2
     );
     event betedOnChallenge(
-        address indexed _address,
-        uint256 indexed _amount,
+        address _address,
+        uint256 indexed _totalAmount1,
+        uint256 indexed _totalAmount2,
         uint256 _tokenId,
-        bytes32 indexed _id
+        uint256 indexed gameid
     );
     event MessageSent(bytes32 messageId);
 
     event ShipsNewStats(uint256[4] lifePoints, uint256[4] attackPoints);
+
+    event shipMinted(uint256 indexed _tokenId, shipClass indexed _shipClass, string _metadata);
 
     /// -----------------------------------------------------------------------
     ///                                 Error
@@ -68,10 +72,10 @@ contract HYPNOS_gameFi is
     error PointsNotApproved(address _buyer, uint256 _tokenIds);
     error AlreadyChallenged(address _user, uint256 _token);
     error NotOwner(address _user, uint256 _token);
-    error NonExistingChallenge(bytes32 id);
-    error ChallengeIsNotActive(bytes32 id);
-    error ChallengeIsActive(bytes32 id);
-    error NotInChallenge(bytes32 id, uint256 _tokenId);
+    error NonExistingChallenge(uint256 id);
+    error ChallengeIsNotActive(uint256 id);
+    error ChallengeIsActive(uint256 id);
+    error NotInChallenge(uint256 id, uint256 _tokenId);
     error NotAllowed(address _address);
     error CannotBetOnThisType();
     error FailedToWithdrawEth(address owner, address target, uint256 value);
@@ -93,7 +97,7 @@ contract HYPNOS_gameFi is
 
     struct ShipInfo {
         bool _onChallenge;
-        bytes32 _challengeID;
+        uint256 _challengeID;
         uint256 _extraLife;
         uint256 _extraStrength;
     }
@@ -142,7 +146,7 @@ contract HYPNOS_gameFi is
     ///                                 Storage
     /// -----------------------------------------------------------------------
 
-    uint256[3] public DURATIONS = [12 hours, 24 hours, 48 hours];
+    uint256[3] public DURATIONS = [12 minutes, 24 minutes, 48 minutes];
     string[4] public TYPES;
     string public s_baseUri;
     uint256 public s_maxSupply;
@@ -157,13 +161,13 @@ contract HYPNOS_gameFi is
     address public hypnosPointAmoy;
 
     address public pool;
-    uint256 public s_mintRandomPrice = 0.25 ether;
+    uint256 public s_mintRandomPrice;
 
     mapping(shipClass => basicPower) public powerClass;
     mapping(address user => mapping(uint256 tokenId => ShipInfo info))
         public shipInfo;
     mapping(uint256 tokenId => string metadata) public _tokenUri;
-    mapping(bytes32 challengeID => challenge challengeInfo) public challenges;
+    mapping(uint256 challengeID => challenge challengeInfo) public challenges;
     mapping(address user => uint256 points) public points;
     mapping(address addressCaller => bool allowed) public allowed;
 
@@ -179,6 +183,8 @@ contract HYPNOS_gameFi is
     uint256 public s_lastRequestId;
     uint256 public s_updatePeriod = 5 minutes;
     uint256 public s_lastUpdate;
+
+    uint public s_sumChallengers;
 
     // CCIP
     address constant routerEthereumSepolia =
@@ -249,6 +255,7 @@ contract HYPNOS_gameFi is
 
         ERC721AUpgradeable._mint(msg.sender, 1);
         _tokenUri[_nextTokenId() - 1] = TYPES[uint8(_class)];
+        emit shipMinted(_nextTokenId() - 1, _class, _tokenUri[_nextTokenId() - 1]);
     }
 
     function mintRandomize() public payable {
@@ -257,7 +264,6 @@ contract HYPNOS_gameFi is
         }
 
         ERC721AUpgradeable._mint(msg.sender, 1);
-
         _vrfRandomizeClass(_nextTokenId() - 1);
     }
 
@@ -274,12 +280,14 @@ contract HYPNOS_gameFi is
         uint256 _tokenId,
         challengeType _type,
         challengeChoice _duration
-    ) public returns (bytes32 id) {
+    ) public returns (uint256 Gameid) {
         if (ownerOf(_tokenId) != msg.sender)
             revert NotOwner(msg.sender, _tokenId);
 
-        id = keccak256(abi.encode(msg.sender, _tokenId));
-
+        s_sumChallengers++;
+        //id = keccak256(abi.encode(msg.sender, _tokenId));
+        uint256 id = s_sumChallengers + _tokenId;
+       
         if (
             shipInfo[msg.sender][_tokenId]._onChallenge ||
             challenges[id]._firstChallenger != address(0)
@@ -294,11 +302,13 @@ contract HYPNOS_gameFi is
 
         emit challengeOpen(msg.sender, _tokenId, _type, _duration, id);
 
+        return(id);
+
         // the graph => challengeOpened (_user, _tokenId, _type, _choice, id) => list -
         // pickChallenge (_user, _tokenId, _type, _choice, id)
     }
 
-    function pickChallenge(bytes32 _id, uint256 _tokenId) public {
+    function pickChallenge(uint256 _id, uint256 _tokenId) public {
         if (ownerOf(_tokenId) != msg.sender)
             revert NotOwner(msg.sender, _tokenId);
 
@@ -331,7 +341,7 @@ contract HYPNOS_gameFi is
 
     function playChallenge(
         uint256 _tokenId,
-        bytes32 _id,
+        uint256 _id,
         uint256 _points
     ) public returns (bool) {
         _checkAllowed(msg.sender);
@@ -343,7 +353,6 @@ contract HYPNOS_gameFi is
 
         if (challenges[_id]._challengeTimestamp < block.timestamp) {
             challenges[_id]._finalized = true;
-            emit challengeFinalized(_id);
 
             uint256 _aux = ((challenges[_id]._totalAmount1 +
                 challenges[_id]._totalAmount2) * s_takerFee) / 10000;
@@ -365,6 +374,7 @@ contract HYPNOS_gameFi is
                 points[challenges[_id]._firstChallenger] +=
                     challenges[_id]._firstChallengerPoints +
                     challenges[_id]._secondChallengerPoints;
+                    emit challengeFinalized(_id,challenges[_id]._firstChallenger);
                 emit updatedPoints(
                     challenges[_id]._firstChallenger,
                     points[challenges[_id]._firstChallenger]
@@ -373,6 +383,7 @@ contract HYPNOS_gameFi is
                 points[challenges[_id]._secondChallenger] +=
                     challenges[_id]._firstChallengerPoints +
                     challenges[_id]._secondChallengerPoints;
+                    emit challengeFinalized(_id,challenges[_id]._secondChallenger);
                 emit updatedPoints(
                     challenges[_id]._secondChallenger,
                     points[challenges[_id]._secondChallenger]
@@ -411,7 +422,7 @@ contract HYPNOS_gameFi is
     //bet on challenge
 
     function betOnChallenge(
-        bytes32 _id,
+        uint256 _id,
         uint256 _amount,
         uint256 _tokenId
     ) public {
@@ -442,11 +453,11 @@ contract HYPNOS_gameFi is
             revert NotInChallenge(_id, _tokenId);
         }
 
-        emit betedOnChallenge(msg.sender, _amount, _tokenId, _id);
+        emit betedOnChallenge(msg.sender, challenges[_id]._totalAmount1,challenges[_id]._totalAmount2, _tokenId, _id);
     }
 
     //claim bet
-    function claimBet(bytes32 _id) public {
+    function claimBet(uint256 _id) public {
         if (!challenges[_id]._finalized) revert ChallengeIsActive(_id);
 
         if (challenges[_id]._firstChallenger == address(0))
@@ -522,7 +533,7 @@ contract HYPNOS_gameFi is
 
             uint8 randomType = uint8(_randomWords[0] % 4);
             _tokenUri[s_requests[_requestId].tokenId] = TYPES[randomType];
-
+            emit shipMinted(s_requests[_requestId].tokenId, shipClass(uint8(_randomWords[0] % 4)), _tokenUri[s_requests[_requestId].tokenId]);
             emit RequestFulfilled(_requestId, _randomWords);
         }
     }
@@ -560,7 +571,7 @@ contract HYPNOS_gameFi is
 
     function getUserDeposits(
         address _address,
-        bytes32 _id
+        uint256 _id
     ) public view returns (uint256, uint256) {
         return (
             challenges[_id].userDeposits[_address]._amount1,
@@ -658,6 +669,10 @@ contract HYPNOS_gameFi is
         IERC20(token).transfer(beneficiary, amount);
     }
 
+    function setPriceRandomizeClass(uint256 _price)external{
+        s_mintRandomPrice = _price;
+    }
+
     function _vrfRandomizeClass(uint256 tokenId) internal {
         uint256 requestId = COORDINATOR.requestRandomWords(
             VRFV2PlusClient.RandomWordsRequest({
@@ -683,6 +698,8 @@ contract HYPNOS_gameFi is
     function _authorizeUpgrade(
         address newImplementation
     ) internal override onlyOwner {}
+
+    
 
     /// -----------------------------------------------------------------------
     ///                                 Controller

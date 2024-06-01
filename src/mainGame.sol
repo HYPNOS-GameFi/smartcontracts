@@ -42,7 +42,7 @@ contract HYPNOS_gameFi is
         uint256 indexed _tokenId,
         uint256 indexed gameid
     );
-    event challengeFinalized(uint256 indexed gameid);
+    event challengeFinalized(uint256 indexed gameid, address _winner);
     event updatedPoints(address indexed _address, uint256 indexed _points);
     event updatedChallengePoints(
         uint256 indexed gameid,
@@ -52,14 +52,17 @@ contract HYPNOS_gameFi is
         address _address2
     );
     event betedOnChallenge(
-        address indexed _address,
-        uint256 indexed _amount,
+        address _address,
+        uint256 indexed _totalAmount1,
+        uint256 indexed _totalAmount2,
         uint256 _tokenId,
         uint256 indexed gameid
     );
     event MessageSent(bytes32 messageId);
 
     event ShipsNewStats(uint256[4] lifePoints, uint256[4] attackPoints);
+
+    event shipMinted(uint256 indexed _tokenId, shipClass indexed _shipClass, string _metadata);
 
     /// -----------------------------------------------------------------------
     ///                                 Error
@@ -252,6 +255,7 @@ contract HYPNOS_gameFi is
 
         ERC721AUpgradeable._mint(msg.sender, 1);
         _tokenUri[_nextTokenId() - 1] = TYPES[uint8(_class)];
+        emit shipMinted(_nextTokenId() - 1, _class, _tokenUri[_nextTokenId() - 1]);
     }
 
     function mintRandomize() public payable {
@@ -260,7 +264,6 @@ contract HYPNOS_gameFi is
         }
 
         ERC721AUpgradeable._mint(msg.sender, 1);
-
         _vrfRandomizeClass(_nextTokenId() - 1);
     }
 
@@ -350,7 +353,6 @@ contract HYPNOS_gameFi is
 
         if (challenges[_id]._challengeTimestamp < block.timestamp) {
             challenges[_id]._finalized = true;
-            emit challengeFinalized(_id);
 
             uint256 _aux = ((challenges[_id]._totalAmount1 +
                 challenges[_id]._totalAmount2) * s_takerFee) / 10000;
@@ -372,6 +374,7 @@ contract HYPNOS_gameFi is
                 points[challenges[_id]._firstChallenger] +=
                     challenges[_id]._firstChallengerPoints +
                     challenges[_id]._secondChallengerPoints;
+                    emit challengeFinalized(_id,challenges[_id]._firstChallenger);
                 emit updatedPoints(
                     challenges[_id]._firstChallenger,
                     points[challenges[_id]._firstChallenger]
@@ -380,6 +383,7 @@ contract HYPNOS_gameFi is
                 points[challenges[_id]._secondChallenger] +=
                     challenges[_id]._firstChallengerPoints +
                     challenges[_id]._secondChallengerPoints;
+                    emit challengeFinalized(_id,challenges[_id]._secondChallenger);
                 emit updatedPoints(
                     challenges[_id]._secondChallenger,
                     points[challenges[_id]._secondChallenger]
@@ -449,7 +453,7 @@ contract HYPNOS_gameFi is
             revert NotInChallenge(_id, _tokenId);
         }
 
-        emit betedOnChallenge(msg.sender, _amount, _tokenId, _id);
+        emit betedOnChallenge(msg.sender, challenges[_id]._totalAmount1,challenges[_id]._totalAmount2, _tokenId, _id);
     }
 
     //claim bet
@@ -529,7 +533,7 @@ contract HYPNOS_gameFi is
 
             uint8 randomType = uint8(_randomWords[0] % 4);
             _tokenUri[s_requests[_requestId].tokenId] = TYPES[randomType];
-
+            emit shipMinted(s_requests[_requestId].tokenId, shipClass(uint8(_randomWords[0] % 4)), _tokenUri[s_requests[_requestId].tokenId]);
             emit RequestFulfilled(_requestId, _randomWords);
         }
     }

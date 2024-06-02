@@ -153,12 +153,13 @@ contract HYPNOS_gameFi is
     uint256[4] public s_classPrice;
     uint256 public s_takerFee;
 
-    //assets in sepolia
+    //assets in Amoy
     address public betPayment;
 
-    ///cross chain CCIP in Amoy
-    address public betUSDAmoy;
-    address public hypnosPointAmoy;
+    ///cross chain CCIP in Sepolia
+    address public betUSDSepolia;
+    address public hypnosPointSepolia;
+    address public airdropFuji;
 
     address public pool;
     uint256 public s_mintRandomPrice;
@@ -186,12 +187,22 @@ contract HYPNOS_gameFi is
 
     uint public s_sumChallengers;
 
-    // CCIP
-    address constant routerEthereumSepolia =
-        0x0BF3dE8c5D3e8A2B34D2BEeB17ABfCeBaf363A59;
-    uint64 constant chainIdAmoy = 16281711391670634445;
-    address constant linkEthereumSepolia =
-        0x779877A7B0D9E8603169DdbD7836e478b4624789;
+    // CCIP Sepolia
+    // address constant routerEthereumSepolia =
+    //     0x0BF3dE8c5D3e8A2B34D2BEeB17ABfCeBaf363A59;
+    // uint64 constant chainIdAmoy = 16281711391670634445;
+    // address constant linkEthereumSepolia =
+    //     0x779877A7B0D9E8603169DdbD7836e478b4624789;
+
+    // CCIP Amoy
+    address constant routerPolygonAmoy =
+        0x9C32fCB86BF0f4a1A8921a9Fe46de3198bb884B2;
+    uint64 constant chainIdSepolia = 16015286601757825753;
+    address constant linkPolygonAmoy =
+        0x0Fd9e8d3aF1aaee056EB9e802c3A762a667b1904;
+
+    uint64 constant chainIdFuji = 14767482510784806043;
+    
 
     /// -----------------------------------------------------------------------
     ///                                 Constructor
@@ -218,13 +229,14 @@ contract HYPNOS_gameFi is
         string memory name_,
         string memory symbol_,
         uint256 maxSupply_,
-        address betUSDAmoy_,
-        address hypnosPointAmoy_,
+        address betUSDSepolia_,
+        address hypnosPointSepolia_,
+        address airdropFuji_,
         address pool_,
         uint256 takerFee,
         uint256[4] memory priceClass,
         string[4] memory typesUri,
-        address betPaymentSepolia_
+        address betPaymentAmoy_
     ) external initializerERC721A initializer {
         __ERC721A_init(name_, symbol_);
         __Security_init(owner_);
@@ -233,10 +245,11 @@ contract HYPNOS_gameFi is
         s_maxSupply = maxSupply_;
         s_takerFee = takerFee;
 
-        betUSDAmoy = betUSDAmoy_;
-        hypnosPointAmoy = hypnosPointAmoy_;
+        betUSDSepolia = betUSDSepolia_;
+        hypnosPointSepolia = hypnosPointSepolia_;
+        airdropFuji = airdropFuji_;
 
-        betPayment = betPaymentSepolia_;
+        betPayment = betPaymentAmoy_;
 
         pool = pool_;
 
@@ -595,39 +608,42 @@ contract HYPNOS_gameFi is
         if (!allowed[_address]) revert NotAllowed(_address);
     }
 
-    //distribute bet
-
-    function _distributeBet(uint256 _tratedAmount, address to) public {
+    function setAirdrop(address user, uint256 _amount)public{
         Client.EVM2AnyMessage memory message = Client.EVM2AnyMessage({
-            receiver: abi.encode(hypnosPointAmoy),
+            receiver: abi.encode(airdropFuji),
             data: abi.encodeWithSignature(
-                "mint(address,uint256)",
-                to,
-                _tratedAmount
+                "setAirdrop(address,uint256)",
+                user,
+                _amount
             ),
             tokenAmounts: new Client.EVMTokenAmount[](0),
             extraArgs: "",
-            feeToken: address(linkEthereumSepolia)
+            feeToken: address(linkPolygonAmoy)
         });
 
-        uint256 fee = IRouterClient(routerEthereumSepolia).getFee(
-            chainIdAmoy,
+        uint256 fee = IRouterClient(routerPolygonAmoy).getFee(
+            chainIdFuji,
             message
         );
 
         bytes32 messageId;
-        LinkTokenInterface(linkEthereumSepolia).approve(
-            routerEthereumSepolia,
+        LinkTokenInterface(linkPolygonAmoy).approve(
+            routerPolygonAmoy,
             fee
         );
-        messageId = IRouterClient(routerEthereumSepolia).ccipSend(
-            chainIdAmoy,
+        messageId = IRouterClient(routerPolygonAmoy).ccipSend(
+            chainIdFuji,
             message
         );
         emit MessageSent(messageId);
 
-        Client.EVM2AnyMessage memory messageBet = Client.EVM2AnyMessage({
-            receiver: abi.encode(betUSDAmoy),
+    }
+
+    //distribute bet CCIP
+
+    function _distributeBet(uint256 _tratedAmount, address to) public {
+        Client.EVM2AnyMessage memory message = Client.EVM2AnyMessage({
+            receiver: abi.encode(hypnosPointSepolia),
             data: abi.encodeWithSignature(
                 "mint(address,uint256)",
                 to,
@@ -635,20 +651,47 @@ contract HYPNOS_gameFi is
             ),
             tokenAmounts: new Client.EVMTokenAmount[](0),
             extraArgs: "",
-            feeToken: address(linkEthereumSepolia)
+            feeToken: address(linkPolygonAmoy)
         });
-        uint256 feeBet = IRouterClient(routerEthereumSepolia).getFee(
-            chainIdAmoy,
+
+        uint256 fee = IRouterClient(routerPolygonAmoy).getFee(
+            chainIdSepolia,
+            message
+        );
+
+        bytes32 messageId;
+        LinkTokenInterface(linkPolygonAmoy).approve(
+            routerPolygonAmoy,
+            fee
+        );
+        messageId = IRouterClient(routerPolygonAmoy).ccipSend(
+            chainIdSepolia,
+            message
+        );
+
+        Client.EVM2AnyMessage memory messageBet = Client.EVM2AnyMessage({
+            receiver: abi.encode(betUSDSepolia),
+            data: abi.encodeWithSignature(
+                "mint(address,uint256)",
+                to,
+                _tratedAmount
+            ),
+            tokenAmounts: new Client.EVMTokenAmount[](0),
+            extraArgs: "",
+            feeToken: address(linkPolygonAmoy)
+        });
+        uint256 feeBet = IRouterClient(routerPolygonAmoy).getFee(
+            chainIdSepolia,
             messageBet
         );
 
         bytes32 messageIdBet;
-        LinkTokenInterface(linkEthereumSepolia).approve(
-            routerEthereumSepolia,
+        LinkTokenInterface(linkPolygonAmoy).approve(
+            routerPolygonAmoy,
             feeBet
         );
-        messageIdBet = IRouterClient(routerEthereumSepolia).ccipSend(
-            chainIdAmoy,
+        messageIdBet = IRouterClient(routerPolygonAmoy).ccipSend(
+            chainIdSepolia,
             messageBet
         );
         emit MessageSent(messageId);

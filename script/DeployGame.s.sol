@@ -84,13 +84,14 @@ contract DeployGame is Script {
             name_,
             symbol_,
             maxSupply_,
-            address(0x6b022ACfAA62c3660B1eB163f557E93D8b246041), // BetUSD Amoy destination CCIP
-            address(0xF90d22a0a22E85a349cbab43325267F360FE210E), // HypnosPoint Polygon Amoy destination CCIP
-            address(0xd6A18bEE62E617107942f2EF59d73d153c1E92c1), //poolGame na polygonAmoy destination CCIP
+            address(0x0C7F40890c8d8753345426F37cCE98D6E995A147), // BetUSD Sepolia destination CCIP
+            address(0xb8618b26B69939E4f70b0878C97a1b8eC3CC269f), // HypnosPoint Sepolia destination CCIP
+            address(0x99A8D5e6c7D88218F9234a73f792fb1c3665642E), //poolGame na Sepolia 
+            address(0x8880F777d00303a857eb756dFA789Ce000c3Eac9), ///airdrop in fuji Destination CCIP
             takerFee,
             priceClass,
             types,
-            address(payment) //in sepolia
+            address(payment) //in Amoy
         );
 
         gameProxy = new ERC1967Proxy(address(gameimplemantation), init);
@@ -115,8 +116,8 @@ contract DeployGame is Script {
     /*final contracts:
 
   == Logs ==
-  address implementation: 0xCbBFE2E8901e8c11903369a5C5c7370DB7871e39
-  game Proxy: 0x6C22b15144F8935E1B2558C7A9d7f3fBd07a1FCB
-  Payment Proxy: 0x1A9F2c7dFA579bf15A9e8b23c2cE23F2E862E30d
+  address implementation: 0x2Bf755cfAB80e0aEdc15beF03ed81ceC8FbcAbba
+  game Proxy: 0x3DE5a892F07a8A5c47BcA2fFFDdacFEc8831fFb7
+  Payment Proxy: 0xafc76132CbDB10b7C863400ae84fEe648cc38d0c
     */
 }

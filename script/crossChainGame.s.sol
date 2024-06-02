@@ -36,7 +36,7 @@ contract DeployDestination is Script, Helper {
     ERC1967Proxy public airdropFujiProxy;
     address public owner;
 
-    bytes32 public salt = bytes32("HypnosAndBetUSD");
+    bytes32 public salt = bytes32("PoolFuji");
     //forge script ./script/crossChainGame.s.sol:DeployDestination -vvv --broadcast --rpc-url sepolia --sig "run(uint8)" -- 0 --verify -vvvv
 
     function run(SupportedNetworks destination) external {
@@ -163,17 +163,19 @@ contract DeployDestination is Script, Helper {
         address minterAirdrop = airdropfuji.owner();
 
         console.log("Minter role airdropfuji granted to: ", minterAirdrop);
+       console.log("Hypnos:", address(hypnospoint));
 
         vm.stopBroadcast();
+        
 
         /*
-        == Logs ==
-  airdropFujiProxy deployed on  Avalanche Fuji with address Proxy:  0x98CC8b20271a0361187d3BAdDfA45c29Da336aE1
-  destinationairdrop deployed on  Avalanche Fuji with address Proxy:  0x8880F777d00303a857eb756dFA789Ce000c3Eac9
-  Minter role airdropfuji granted to:  0x8880F777d00303a857eb756dFA789Ce000c3Eac9
-  Hypnos Proxy: 0x8083aC02ba0bdc3C8409A7A16D3CeBB2875921b2
-  Implmentation: 0xbA53d5B445aAf53A06Bb6252F2dEF5D5dD75d6E7
+
+  == Logs ==
+  airdropFujiProxy deployed on  Avalanche Fuji with address Proxy:  0x331C21d2B2A3Cf551fc73f6592874178De9dDb61
+  destinationairdrop deployed on  Avalanche Fuji with address Proxy:  0x4afa88E1DC522F190d2E33C4d4DD347E993C5Db8
+  Minter role airdropfuji granted to:  0x4afa88E1DC522F190d2E33C4d4DD347E993C5Db8
+  Hypnos: 0xA64a2044D3d1247a90439A458cD0e37a359dA6d2
         */
     }
-
+ 
 }

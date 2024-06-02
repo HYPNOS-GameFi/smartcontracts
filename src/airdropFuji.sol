@@ -52,7 +52,7 @@ contract airdropFuji is UUPSUpgradeable, SecurityUpgradeable {
         s_hypnosPoint = hypnospoint_;
     }
 
-    function setAirdrop(address user, uint256 quantity)external{
+    function setAirdrop(address user, uint256 quantity) external {
         bool exists = false;
         for (uint256 i = 0; i < recipients.length; i++) {
             if (recipients[i] == user) {
@@ -61,21 +61,21 @@ contract airdropFuji is UUPSUpgradeable, SecurityUpgradeable {
             }
         }
         quantityAirdrops[user] = quantity;
-        allowAirdrop[user]=true;
+        allowAirdrop[user] = true;
+        recipients.push(user); // Adiciona o usuário à lista de destinatários
     }
 
-    function claimAirdrop(uint amount) public{
-        if(allowAirdrop[msg.sender]=true){
-            hypnosPoint(s_hypnosPoint).mint(msg.sender, amount);
+    function claimAirdrop(uint amount) public {
+        require(allowAirdrop[msg.sender], "Not allowed to claim");
+        hypnosPoint(s_hypnosPoint).mint(msg.sender, amount);
+    }
+
+    // Automate Airdrop
+    function airdrop() public {
+        for (uint256 i = 0; i < recipients.length; i++) {
+            address recipient = recipients[i];
+            hypnosPoint(s_hypnosPoint).mint(recipient, 10e8); // Corrigido para 10e18 para representar 10000000000000000000 tokens
         }
-    }
-
-    //Automate Airdrop
-    function airdorp()public {
-    for (uint256 i = 0; i < recipients.length; i++) {
-    address recipient = recipients[i];
-    hypnosPoint(s_hypnosPoint).mint(recipient, 10e8);
-    }
     }
 
     /// -----------------------------------------------------------------------

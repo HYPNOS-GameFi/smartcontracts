@@ -87,7 +87,7 @@ contract DeployGame is Script {
             address(0x0C7F40890c8d8753345426F37cCE98D6E995A147), // BetUSD Sepolia destination CCIP
             address(0xb8618b26B69939E4f70b0878C97a1b8eC3CC269f), // HypnosPoint Sepolia destination CCIP
             address(0x99A8D5e6c7D88218F9234a73f792fb1c3665642E), //poolGame na Sepolia 
-            address(0x8880F777d00303a857eb756dFA789Ce000c3Eac9), ///airdrop in fuji Destination CCIP
+            address(0x4afa88E1DC522F190d2E33C4d4DD347E993C5Db8), ///airdrop in fuji Destination CCIP
             takerFee,
             priceClass,
             types,
@@ -114,10 +114,9 @@ contract DeployGame is Script {
     }
 
     /*final contracts:
-
   == Logs ==
-  address implementation: 0x2Bf755cfAB80e0aEdc15beF03ed81ceC8FbcAbba
-  game Proxy: 0x3DE5a892F07a8A5c47BcA2fFFDdacFEc8831fFb7
-  Payment Proxy: 0xafc76132CbDB10b7C863400ae84fEe648cc38d0c
+  address implementation: 0x66A937Fa011f67862063272eFa8B28024675A05c
+  game Proxy: 0xeC0b52dA681658a2627cC89B0e20bC74f424C2bE
+  Payment Proxy: 0x25E703DF9366Bd58E9540bEC2d4149B6966bc0d7
     */
 }

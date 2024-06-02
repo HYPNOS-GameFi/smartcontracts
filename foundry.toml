@@ -33,6 +33,7 @@ sepolia = "${SEPOLIA_RPC_URL}"
 amoy = "${AMOY_RPC_URL}"
 polygon = "${POLYGON_RPC_URL}"
 ethereum = "${ETHEREUM_RPC_URL}"
+fuji = "${FUJI_RPC_URL}"
 
 
 [etherscan]
